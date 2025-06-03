@@ -22,10 +22,10 @@ interface RealDataType {
     id: string;
     name: string;
   };
-  sample_account: {
-    id: string;
+  account_info: {
+    account_id: string;
     name: string;
-    business: {
+    business?: {
       id: string;
       name: string;
     };
@@ -34,6 +34,7 @@ interface RealDataType {
   attributely_pro?: {
     connection_quality: string;
     ready_for_production: boolean;
+    ready_for_affiliate: boolean;
   };
 }
 
@@ -55,9 +56,9 @@ export default function Dashboard() {
   const [timeRange, setTimeRange] = useState('30d');
   const [realData, setRealData] = useState<RealDataType | null>(null);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState({ name: 'María García', role: 'Gerente de Marketing' });
+  const [user, setUser] = useState({ name: 'Usuario', role: 'AttributelyPro' });
 
-  // ===== FUNCIÓN SIMPLIFICADA - DATOS REALES =====
+  // ===== FUNCIÓN DE CONEXIÓN CON API REAL =====
   useEffect(() => {
     const fetchRealData = async () => {
       try {
@@ -69,13 +70,13 @@ export default function Dashboard() {
           if (data.status === 'success') {
             setUser({ 
               name: data.user?.name || 'Michely Espinel', 
-              role: data.sample_account?.business?.name || 'Consultora Marykay QUITO' 
+              role: data.account_info?.name || 'AttributelyPro Affiliate Marketing' 
             });
             setRealData(data);
           }
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching real data:', error);
       } finally {
         setLoading(false);
       }
@@ -588,29 +589,29 @@ export default function Dashboard() {
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Rendimiento por Canal</h3>
                   {realData?.status === 'success' && (
-                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
-                      🔗 {user.role}
-                    </span>
-                  )}
-                </div>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={channelData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="channel" angle={-45} textAnchor="end" height={80} />
-                      <YAxis />
-                      <Tooltip 
-                        formatter={(value: any) => [`$${value.toLocaleString()}`, 'Ingresos']}
-                      />
-                      <Bar dataKey="revenue" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+                   <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
+                     🔗 {user.role}
+                   </span>
+                 )}
+               </div>
+               <div className="h-80">
+                 <ResponsiveContainer width="100%" height="100%">
+                   <BarChart data={channelData}>
+                     <CartesianGrid strokeDasharray="3 3" />
+                     <XAxis dataKey="channel" angle={-45} textAnchor="end" height={80} />
+                     <YAxis />
+                     <Tooltip 
+                       formatter={(value: any) => [`$${value.toLocaleString()}`, 'Ingresos']}
+                     />
+                     <Bar dataKey="revenue" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                   </BarChart>
+                 </ResponsiveContainer>
+               </div>
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+   </div>
+ );
 }

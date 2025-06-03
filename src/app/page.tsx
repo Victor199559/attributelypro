@@ -24,80 +24,89 @@ const translations = {
     },
     comparison: {
       title: 'Por Qué Elegir AttributelyPro?',
-      oldSolutions: 'Soluciones Obsoletas',
-      ourSolution: 'AttributelyPro (Moderno)',
+      oldSolutions: 'Cometly y Competencia',
+      ourSolution: 'AttributelyPro (IA + Español)',
       oldFeatures: [
-        'Configuración compleja (5+ días)',
-        'Costoso ($3000+/mes)',
-        'Interfaz confusa',
-        'Integraciones limitadas',
-        'Sin optimización IA',
-        'Soporte deficiente'
+        'Setup complejo (5+ días)',
+        'Precios abusivos ($500-5000/mes)',
+        'Solo en inglés',
+        'Interfaces anticuadas',
+        'Sin IA predictiva',
+        'Solo reportes básicos'
       ],
       newFeatures: [
-        'Configuración rápida (5 minutos)',
-        'Precio accesible (Desde $99/mes)',
-        'UI intuitiva estilo Netflix',
-        '50+ integraciones listas',
-        'Optimización con IA',
-        'Soporte 24/7 premium'
+        'Setup en 5 minutos',
+        'Precios justos ($0-299/mes)',
+        'Español + Inglés nativo',
+        'UI moderna estilo Netflix',
+        '🔮 Profeta Creativo con IA',
+        '🦄 AI cross-platform único'
       ]
     },
     features: {
       title: 'Características Que Impulsan Resultados',
       list: [
         {
-          title: 'Insights con IA',
-          description: 'Algoritmos de machine learning predicen el valor de vida del cliente y optimizan campañas automáticamente.'
+          title: 'Profeta Creativo IA',
+          description: 'Predice qué creativos van a funcionar ANTES de gastar. Primer predictor de performance creativo en español del mundo.'
         },
         {
-          title: 'Atribución Multi-Touch',
-          description: 'Rastrea cada punto de contacto entre dispositivos y canales con tecnología sin cookies, que respeta la privacidad.'
+          title: 'AI Insights Cross-Platform',
+          description: 'Optimización automática entre Google, Meta y TikTok con recomendaciones específicas de IA.'
         },
         {
-          title: 'Optimización en Tiempo Real',
-          description: 'Ajustes automáticos de pujas y reasignación de presupuesto basado en datos de rendimiento.'
+          title: 'Fraud Detection Enterprise',
+          description: 'IA que detecta y bloquea tráfico falso automáticamente, protegiendo tu presupuesto publicitario.'
         },
         {
-          title: 'Detección de Fraude',
-          description: 'Detección de fraude con IA filtra el tráfico falso y protege tu gasto publicitario.'
+          title: 'Dashboard Completo',
+          description: 'Suite completa con 8 páginas: Analytics, Campañas, Audiencias, Reportes y más.'
         },
         {
-          title: 'Predictor de ROI',
-          description: 'Predice el ROI de la campaña antes del lanzamiento y obtén insights de rendimiento garantizados.'
+          title: 'Pioneer Program',
+          description: 'Sé el primero en tu industria. Testing gratuito + datos exclusivos de tu nicho.'
         },
         {
-          title: 'Listo para White-Label',
-          description: 'Perfecto para agencias - rebrandea y revende a tus clientes con personalización completa.'
+          title: 'White-Label Ready',
+          description: 'Perfecto para agencias - rebrandea completamente y revende a tus clientes.'
         }
       ]
     },
     pricing: {
       title: 'Precios Que Escalan Con Tu Éxito',
-      subtitle: 'A diferencia de los precios fijos costosos del mercado, crecemos con tu negocio',
+      subtitle: 'Hasta 10x más barato que Cometly. Paga por resultados, no por acceso.',
       plans: [
         {
-          name: 'Inicial',
-          price: 'Gratis',
-          description: 'Perfecto para pequeñas empresas',
-          features: ['Hasta 1,000 sesiones/mes', 'Atribución básica', '2 integraciones', 'Soporte por email'],
-          cta: 'Comenzar Gratis'
+          name: 'Gratuito',
+          price: '$0',
+          description: 'Perfecto para validar y empezar',
+          features: ['Dashboard principal básico', 'Hasta 3 campañas', 'Analíticas básicas (7 días)', 'Configuración manual', 'Soporte por email'],
+          cta: 'Comenzar Gratis',
+          highlight: false
         },
         {
-          name: 'Crecimiento',
+          name: 'Pro',
           price: '$99',
-          description: 'Para empresas en crecimiento',
-          features: ['Hasta 50,000 sesiones/mes', 'Predicciones IA', '25 integraciones', 'Soporte prioritario', 'White-label'],
-          cta: 'Prueba Gratuita'
+          description: 'Todo lo que necesitas para crecer',
+          features: ['🔮 Profeta Creativo ilimitado', '🦄 AI Insights cross-platform', '📊 Dashboard completo + todas las páginas', '🛡️ Fraud Detection básico', 'Pioneer Program (nuevos nichos)', 'Reportes automatizados', 'Soporte prioritario'],
+          cta: 'Empezar Prueba',
+          highlight: true
         },
         {
-          name: 'Empresarial',
+          name: 'Empresa',
           price: '$299',
-          description: 'Para grandes empresas',
-          features: ['Sesiones ilimitadas', 'Modelos ML personalizados', 'Todas las integraciones', 'Soporte 24/7', 'Gerente dedicado'],
-          cta: 'Contactar Ventas'
+          description: 'Para equipos que dominan el mercado',
+          features: ['Todo de Pro +', '🦄 White-label completo', '🛡️ Fraud Detection enterprise', 'Modelos ML personalizados', 'API completa', 'Integraciones custom', 'Manager dedicado', 'SLA 99.9%'],
+          cta: 'Contactar Ventas',
+          highlight: false
         }
-      ]
+      ],
+      pioneer: {
+        title: '🚀 Programa Pioneer',
+        subtitle: 'Sé el primero en tu industria',
+        description: 'Solo $50/mes extra: Testeo gratuito de $50 + predicciones exclusivas para tu nicho',
+        features: ['Testing gratuito incluido', 'Datos exclusivos de tu industria', 'Influencia en desarrollo IA', '6 meses de ventaja vs competencia']
+      }
     },
     cta: {
       title: '¿Listo para Potenciar tu Marketing?',
@@ -134,80 +143,89 @@ const translations = {
     },
     comparison: {
       title: 'Why Choose AttributelyPro?',
-      oldSolutions: 'Outdated Solutions',
-      ourSolution: 'AttributelyPro (Modern)',
+      oldSolutions: 'Cometly & Competition',
+      ourSolution: 'AttributelyPro (AI + Spanish)',
       oldFeatures: [
         'Complex setup (5+ days)',
-        'Expensive ($3000+/month)',
-        'Confusing interface',
-        'Limited integrations',
-        'No AI optimization',
-        'Poor customer support'
+        'Abusive pricing ($500-5000/month)',
+        'English only',
+        'Outdated interfaces',
+        'No predictive AI',
+        'Basic reports only'
       ],
       newFeatures: [
-        'Quick setup (5 minutes)',
-        'Affordable (Starting $99/month)',
-        'Intuitive Netflix-style UI',
-        '50+ integrations ready',
-        'AI-powered optimization',
-        '24/7 premium support'
+        'Setup in 5 minutes',
+        'Fair pricing ($0-299/month)',
+        'Native Spanish + English',
+        'Modern Netflix-style UI',
+        '🔮 Profeta Creativo with AI',
+        '🦄 Unique cross-platform AI'
       ]
     },
     features: {
       title: 'Features That Drive Results',
       list: [
         {
-          title: 'AI-Powered Insights',
-          description: 'Machine learning algorithms predict customer lifetime value and optimize campaigns automatically.'
+          title: 'Profeta Creativo AI',
+          description: 'Predict which creatives will work BEFORE spending. World\'s first creative performance predictor in Spanish.'
         },
         {
-          title: 'Multi-Touch Attribution',
-          description: 'Track every touchpoint across devices and channels with cookieless, privacy-first technology.'
+          title: 'AI Insights Cross-Platform',
+          description: 'Automatic optimization across Google, Meta and TikTok with specific AI recommendations.'
         },
         {
-          title: 'Real-Time Optimization',
-          description: 'Automatic bid adjustments and budget reallocation based on performance data.'
+          title: 'Enterprise Fraud Detection',
+          description: 'AI that detects and blocks fake traffic automatically, protecting your advertising budget.'
         },
         {
-          title: 'Fraud Detection',
-          description: 'AI-powered fraud detection filters out fake traffic and protects your ad spend.'
+          title: 'Complete Dashboard',
+          description: 'Complete suite with 8 pages: Analytics, Campaigns, Audiences, Reports and more.'
         },
         {
-          title: 'ROI Predictor',
-          description: 'Predict campaign ROI before launch and get guaranteed performance insights.'
+          title: 'Pioneer Program',
+          description: 'Be first in your industry. Free testing + exclusive data from your niche.'
         },
         {
           title: 'White-Label Ready',
-          description: 'Perfect for agencies - rebrand and resell to your clients with full customization.'
+          description: 'Perfect for agencies - completely rebrand and resell to your clients.'
         }
       ]
     },
     pricing: {
       title: 'Pricing That Scales With Your Success',
-      subtitle: 'Unlike expensive fixed pricing in the market, we grow with your business',
+      subtitle: 'Up to 10x cheaper than Cometly. Pay for results, not access.',
       plans: [
         {
-          name: 'Starter',
-          price: 'Free',
-          description: 'Perfect for small businesses',
-          features: ['Up to 1,000 sessions/month', 'Basic attribution', '2 integrations', 'Email support'],
-          cta: 'Start Free'
+          name: 'Free',
+          price: '$0',
+          description: 'Perfect to validate and start',
+          features: ['Basic main dashboard', 'Up to 3 campaigns', 'Basic analytics (7 days)', 'Manual setup', 'Email support'],
+          cta: 'Start Free',
+          highlight: false
         },
         {
-          name: 'Growth',
+          name: 'Pro',
           price: '$99',
-          description: 'For growing businesses',
-          features: ['Up to 50,000 sessions/month', 'AI predictions', '25 integrations', 'Priority support', 'White-label option'],
-          cta: 'Start Trial'
+          description: 'Everything you need to grow',
+          features: ['🔮 Unlimited Profeta Creativo', '🦄 AI Insights cross-platform', '📊 Complete dashboard + all pages', '🛡️ Basic Fraud Detection', 'Pioneer Program (new niches)', 'Automated reports', 'Priority support'],
+          cta: 'Start Trial',
+          highlight: true
         },
         {
           name: 'Enterprise',
           price: '$299',
-          description: 'For large businesses',
-          features: ['Unlimited sessions', 'Custom ML models', 'All integrations', '24/7 phone support', 'Dedicated account manager'],
-          cta: 'Contact Sales'
+          description: 'For teams that dominate the market',
+          features: ['Everything in Pro +', '🦄 Complete white-label', '🛡️ Enterprise Fraud Detection', 'Custom ML models', 'Full API access', 'Custom integrations', 'Dedicated manager', '99.9% SLA'],
+          cta: 'Contact Sales',
+          highlight: false
         }
-      ]
+      ],
+      pioneer: {
+        title: '🚀 Pioneer Program',
+        subtitle: 'Be first in your industry',
+        description: 'Only $50/month extra: Free $50 testing + exclusive predictions for your niche',
+        features: ['Free testing included', 'Exclusive industry data', 'Influence AI development', '6 months advantage vs competition']
+      }
     },
     cta: {
       title: 'Ready to Supercharge Your Marketing?',
@@ -264,7 +282,10 @@ export default function LandingPage() {
             </button>
           </div>
           
-          <button className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-2 rounded-lg text-white font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all">
+          <button 
+            onClick={() => window.location.href = '/dashboard'}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-2 rounded-lg text-white font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all"
+          >
             {t.nav.getStarted}
           </button>
         </div>
@@ -294,7 +315,10 @@ export default function LandingPage() {
               <span>{t.hero.startTrial}</span>
               <ArrowRight className="w-5 h-5" />
             </a>
-            <button className="border border-gray-600 px-8 py-4 rounded-lg text-white font-semibold text-lg hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2">
+            <button 
+              onClick={() => window.location.href = '/dashboard'}
+              className="border border-gray-600 px-8 py-4 rounded-lg text-white font-semibold text-lg hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2"
+            >
               <Play className="w-5 h-5" />
               <span>{t.hero.watchDemo}</span>
             </button>
@@ -399,17 +423,17 @@ export default function LandingPage() {
           
           <div className="grid md:grid-cols-3 gap-8">
             {t.pricing.plans.map((plan, i) => (
-              <div key={i} className={`relative bg-slate-800/50 border rounded-xl p-8 ${i === 1 ? 'border-purple-500 scale-105' : 'border-slate-700'}`}>
-                {i === 1 && (
+              <div key={i} className={`relative bg-slate-800/50 border rounded-xl p-8 ${plan.highlight ? 'border-purple-500 scale-105' : 'border-slate-700'}`}>
+                {plan.highlight && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-1 rounded-full text-white text-sm font-semibold">
-                    Popular
+                    Más Popular
                   </div>
                 )}
                 
                 <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
                 <div className="text-4xl font-bold text-white mb-2">
                   {plan.price}
-                  {plan.price !== 'Free' && plan.price !== 'Gratis' && <span className="text-lg text-gray-400">/mes</span>}
+                  {plan.price !== '$0' && <span className="text-lg text-gray-400">/mes</span>}
                 </div>
                 <p className="text-gray-400 mb-8">{plan.description}</p>
                 
@@ -417,20 +441,54 @@ export default function LandingPage() {
                   {plan.features.map((feature, j) => (
                     <li key={j} className="flex items-center space-x-3 text-gray-300">
                       <CheckCircle className="w-5 h-5 text-green-400" />
-                      <span>{feature}</span>
+                      <span className="text-sm">{feature}</span>
                     </li>
                   ))}
                 </ul>
                 
-                <button className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                  i === 1 
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg hover:shadow-purple-500/25' 
-                    : 'border border-gray-600 text-white hover:bg-gray-800'
-                }`}>
+                <button 
+                  onClick={() => {
+                    if (plan.name === 'Gratuito' || plan.name === 'Free') {
+                      window.location.href = '/dashboard';
+                    } else if (plan.name === 'Pro') {
+                      window.location.href = '/dashboard';
+                    } else {
+                      window.location.href = 'mailto:ceo@attributelypro.com?subject=Enterprise Plan Interest';
+                    }
+                  }}
+                  className={`w-full py-3 rounded-lg font-semibold transition-all ${
+                    plan.highlight 
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg hover:shadow-purple-500/25' 
+                      : 'border border-gray-600 text-white hover:bg-gray-800'
+                  }`}
+                >
                   {plan.cta}
                 </button>
               </div>
             ))}
+          </div>
+
+          {/* Pioneer Program Section */}
+          <div className="mt-16 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl p-8 text-center">
+            <h3 className="text-2xl font-bold text-white mb-4">{t.pricing.pioneer.title}</h3>
+            <p className="text-purple-300 text-lg mb-4">{t.pricing.pioneer.subtitle}</p>
+            <p className="text-gray-300 mb-6">{t.pricing.pioneer.description}</p>
+            
+            <div className="grid md:grid-cols-4 gap-4 mb-8">
+              {t.pricing.pioneer.features.map((feature, i) => (
+                <div key={i} className="flex items-center space-x-2 text-purple-300">
+                  <CheckCircle className="w-4 h-4 text-purple-400" />
+                  <span className="text-sm">{feature}</span>
+                </div>
+              ))}
+            </div>
+            
+            <button 
+              onClick={() => window.location.href = '/profeta-creativo'}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3 rounded-lg text-white font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all"
+            >
+              Convertirme en Pioneer
+            </button>
           </div>
         </div>
       </section>
@@ -453,7 +511,13 @@ export default function LandingPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="flex-1 px-4 py-3 rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
             />
-            <button className="bg-gradient-to-r from-purple-500 to-pink-500 px-8 py-3 rounded-lg text-white font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all">
+            <button 
+              onClick={() => {
+                setEmail('');
+                window.location.href = '/dashboard';
+              }}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 px-8 py-3 rounded-lg text-white font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all"
+            >
               {t.cta.button}
             </button>
           </div>

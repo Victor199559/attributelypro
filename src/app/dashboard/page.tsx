@@ -610,134 +610,148 @@ export default function Dashboard() {
             </div>
 
             {/* Platform Status Cards */}
-            {realAccountData && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-                {/* Meta AI Status */}
-                <div className="bg-white p-4 rounded-lg shadow border">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <div className="text-xl">🔵</div>
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-gray-900">Meta AI</p>
-                        <p className="text-xs text-gray-500">
-                          {realAccountData.meta.status === 'success' ? 'Connected' : 'Demo'}
-                        </p>
-                      </div>
+            {/* Quintuple AI Platform Cards - SIEMPRE VISIBLES */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+              {/* Meta AI Card */}
+              <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <div className="text-xl">🔵</div>
                     </div>
-                    <div className="flex flex-col items-end">
-                      <div className={`w-2 h-2 rounded-full ${
-                        realAccountData.meta.status === 'success' ? 'bg-green-500' : 'bg-gray-400'
-                      }`}></div>
-                      <span className="text-xs text-gray-400 mt-1">
-                        {realAccountData.meta.campaigns_count} campaigns
-                      </span>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-900">Meta AI</p>
+                      <p className="text-xs text-gray-500">
+                        {realAccountData?.meta.status === 'success' ? 'Connected' : 'Ready'}
+                      </p>
                     </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <div className={`w-3 h-3 rounded-full ${
+                      realAccountData?.meta.status === 'success' ? 'bg-green-500' : 'bg-gray-400'
+                    }`}></div>
+                    <span className="text-xs text-gray-400 mt-1">
+                      act_1038...
+                    </span>
                   </div>
                 </div>
-
-                {/* Google AI Status */}
-                <div className="bg-white p-4 rounded-lg shadow border">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-red-100 rounded-lg">
-                        <div className="text-xl">🔴</div>
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-gray-900">Google AI</p>
-                        <p className="text-xs text-gray-500">
-                          {realAccountData.google.status === 'success' ? 'Connected' : 'Demo'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <div className={`w-2 h-2 rounded-full ${
-                        realAccountData.google.status === 'success' ? 'bg-green-500' : 'bg-gray-400'
-                      }`}></div>
-                      <span className="text-xs text-gray-400 mt-1">
-                        {realAccountData.google.campaigns_count} campaigns
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* TikTok AI Status */}
-                <div className="bg-white p-4 rounded-lg shadow border">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-pink-100 rounded-lg">
-                        <div className="text-xl">🎵</div>
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-gray-900">TikTok AI</p>
-                        <p className="text-xs text-gray-500">
-                          {realAccountData.tiktok.approval_status === 'pending_review' ? 'Pending' : 'Ready'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <div className={`w-2 h-2 rounded-full ${
-                        realAccountData.tiktok.approval_status === 'pending_review' ? 'bg-yellow-500' : 'bg-gray-400'
-                      }`}></div>
-                      <span className="text-xs text-gray-400 mt-1">
-                        {realAccountData.tiktok.campaigns_count} campaigns
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* YouTube AI Status */}
-                <div className="bg-white p-4 rounded-lg shadow border">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-red-100 rounded-lg">
-                        <div className="text-xl">📺</div>
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-gray-900">YouTube AI</p>
-                        <p className="text-xs text-gray-500">
-                          {realAccountData.youtube.api_key_status === 'active' ? 'Active' : 'Demo'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <div className={`w-2 h-2 rounded-full ${
-                        realAccountData.youtube.data_available ? 'bg-green-500' : 'bg-gray-400'
-                      }`}></div>
-                      <span className="text-xs text-gray-400 mt-1">
-                        {realAccountData.youtube.quota_usage}/{realAccountData.youtube.daily_quota_limit} quota
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Micro-Budget AI Status */}
-                <div className="bg-white p-4 rounded-lg shadow border">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-yellow-100 rounded-lg">
-                        <div className="text-xl">⚡</div>
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-gray-900">Micro AI</p>
-                        <p className="text-xs text-gray-500">
-                          {realAccountData.microBudget.optimization_active ? 'Optimizing' : 'Ready'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <div className={`w-2 h-2 rounded-full ${
-                        realAccountData.microBudget.optimization_active ? 'bg-green-500' : 'bg-gray-400'
-                      }`}></div>
-                      <span className="text-xs text-gray-400 mt-1">
-                        {realAccountData.microBudget.savings_calculated}% savings
-                      </span>
-                    </div>
-                  </div>
+                <div className="mt-2 text-xs text-blue-600">
+                  Advantage+ Ready
                 </div>
               </div>
-            )}
+
+              {/* Google AI Card */}
+              <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <div className="text-xl">🔴</div>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-900">Google AI</p>
+                      <p className="text-xs text-gray-500">
+                        {realAccountData?.google.status === 'success' ? 'Connected' : 'Ready'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <div className={`w-3 h-3 rounded-full ${
+                      realAccountData?.google.status === 'success' ? 'bg-green-500' : 'bg-gray-400'
+                    }`}></div>
+                    <span className="text-xs text-gray-400 mt-1">
+                      745370...
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-red-600">
+                  Performance Max
+                </div>
+              </div>
+
+              {/* TikTok AI Card */}
+              <div className="bg-white p-4 rounded-lg shadow border-l-4 border-pink-500">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-pink-100 rounded-lg">
+                      <div className="text-xl">🎵</div>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-900">TikTok AI</p>
+                      <p className="text-xs text-gray-500">
+                        {realAccountData?.tiktok.approval_status === 'pending_review' ? 'Pending' : 'Ready'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <div className={`w-3 h-3 rounded-full ${
+                      realAccountData?.tiktok.approval_status === 'pending_review' ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}></div>
+                    <span className="text-xs text-gray-400 mt-1">
+                      751778...
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-pink-600">
+                  {realAccountData?.tiktok.approval_status === 'pending_review' ? 'Under Review' : 'Algorithm Ready'}
+                </div>
+              </div>
+
+              {/* YouTube AI Card */}
+              <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-600">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <div className="text-xl">📺</div>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-900">YouTube AI</p>
+                      <p className="text-xs text-gray-500">
+                        {realAccountData?.youtube.data_available ? 'Active' : 'Ready'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <div className={`w-3 h-3 rounded-full ${
+                      realAccountData?.youtube.data_available ? 'bg-green-500' : 'bg-gray-400'
+                    }`}></div>
+                    <span className="text-xs text-gray-400 mt-1">
+                      API v3
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-red-600">
+                  Video Analytics
+                </div>
+              </div>
+
+              {/* Micro-Budget AI Card */}
+              <div className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <div className="text-xl">⚡</div>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-900">Micro AI</p>
+                      <p className="text-xs text-gray-500">
+                        {realAccountData?.microBudget.optimization_active ? 'Optimizing' : 'Ready'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <div className={`w-3 h-3 rounded-full ${
+                      realAccountData?.microBudget.optimization_active ? 'bg-green-500' : 'bg-blue-500'
+                    }`}></div>
+                    <span className="text-xs text-gray-400 mt-1">
+                      Engine
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-yellow-600">
+                  Budget Optimizer
+                </div>
+              </div>
+            </div>
 
             {/* Performance Charts with Real Data */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

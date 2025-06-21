@@ -114,7 +114,9 @@ export default function Dashboard() {
   });
 
   // ===== AWS BACKEND URL - TU EC2 REAL =====
-  const AWS_BACKEND_URL = 'http://3.16.108.83:8000';
+  const AWS_BACKEND_URL = typeof window !== 'undefined' && window.location.hostname === 'localhost' 
+  ? 'http://3.16.108.83:8000'  // Desarrollo local - directo
+  : '/api/proxy';              // Producción Vercel - a través de proxy
 
   // ===== FETCH REAL ACCOUNT DATA FROM AWS BACKEND =====
   useEffect(() => {

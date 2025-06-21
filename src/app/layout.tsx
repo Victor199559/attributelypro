@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AttributelyPro - AI Marketing Attribution",
-  description: "World's first Quintuple AI marketing attribution platform",
+  title: "AttributelyPro - Neural Marketing Attribution",
+  description: "Plataforma de attribution marketing con IA que descubre audiencias rentables automáticamente",
 };
 
 export default function RootLayout({
@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body className={inter.className}>
         {children}
       </body>

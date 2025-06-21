@@ -1,31 +1,37 @@
-# docker-compose.yml
-# ATTRIBUTELY PRO - Infrastructure Completa
 version: '3.8'
 
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: attributely_postgres
     environment:
-      POSTGRES_DB: attributely
+      POSTGRES_DB: attributely_analytics
       POSTGRES_USER: attributely_user
-      POSTGRES_PASSWORD: attr_secure_2024
-      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_PASSWORD: dev_password_2025
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-    networks:
-      - attributely_network
+      - ./database/init:/docker-entrypoint-initdb.d
+    command: >
+      postgres 
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c work_mem=4MB
+      -c maintenance_work_mem=64MB
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U attributely_user -d attributely"]
+      test: ["CMD-SHELL", "pg_isready -U attributely_user -d attributely_analytics"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Redis Cache
+  # Redis for Caching & Sessions
   redis:
     image: redis:7-alpine
     container_name: attributely_redis
@@ -33,136 +39,57 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    networks:
-      - attributely_network
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # FastAPI Backend
-  backend:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: attributely_backend
+  # pgAdmin for Database Management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: attributely_pgadmin
     environment:
-      - DATABASE_URL=postgresql://attributely_user:attr_secure_2024@postgres:5432/attributely
-      - REDIS_URL=redis://redis:6379
-      - SECRET_KEY=attributely_pro_jwt_secret_2024_super_secure
-      - ENVIRONMENT=development
-      - CORS_ORIGINS=http://localhost:3000,https://attributelypro.com
+      PGADMIN_DEFAULT_EMAIL: admin@attributelypro.com
+      PGADMIN_DEFAULT_PASSWORD: admin_2025
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
-      - "8000:8000"
+      - "8080:80"
     volumes:
-      - ./backend:/app
-    networks:
-      - attributely_network
+      - pgadmin_data:/var/lib/pgadmin
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
     restart: unless-stopped
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
-  # Next.js Frontend (opcional - para desarrollo)
-  frontend:
-    build:
-      context: ./
-      dockerfile: Dockerfile.frontend
-    container_name: attributely_frontend
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NODE_ENV=development
+  # ClickHouse for Analytics (Optional - High Performance)
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: attributely_clickhouse
     ports:
-      - "3000:3000"
+      - "8123:8123"
+      - "9000:9000"
     volumes:
-      - ./src:/app/src
-      - ./public:/app/public
-      - ./package.json:/app/package.json
-    networks:
-      - attributely_network
-    depends_on:
-      - backend
-    restart: unless-stopped
-
-  # Nginx Reverse Proxy (Production)
-  nginx:
-    image: nginx:alpine
-    container_name: attributely_nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-    networks:
-      - attributely_network
-    depends_on:
-      - backend
-      - frontend
-    restart: unless-stopped
-    profiles:
-      - production
-
-  # Celery Worker (para background tasks)
-  celery_worker:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: attributely_celery
+      - clickhouse_data:/var/lib/clickhouse
+      - ./database/clickhouse:/docker-entrypoint-initdb.d
     environment:
-      - DATABASE_URL=postgresql://attributely_user:attr_secure_2024@postgres:5432/attributely
-      - REDIS_URL=redis://redis:6379
-      - SECRET_KEY=attributely_pro_jwt_secret_2024_super_secure
-    volumes:
-      - ./backend:/app
-    networks:
-      - attributely_network
-    depends_on:
-      - postgres
-      - redis
+      CLICKHOUSE_DB: attributely_events
+      CLICKHOUSE_USER: attributely_user
+      CLICKHOUSE_PASSWORD: dev_password_2025
     restart: unless-stopped
-    command: celery -A tasks worker --loglevel=info
-    profiles:
-      - production
-
-  # Celery Beat (para tareas programadas)
-  celery_beat:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: attributely_celery_beat
-    environment:
-      - DATABASE_URL=postgresql://attributely_user:attr_secure_2024@postgres:5432/attributely
-      - REDIS_URL=redis://redis:6379
-    volumes:
-      - ./backend:/app
-    networks:
-      - attributely_network
-    depends_on:
-      - postgres
-      - redis
-    restart: unless-stopped
-    command: celery -A tasks beat --loglevel=info
-    profiles:
-      - production
 
 volumes:
   postgres_data:
     driver: local
   redis_data:
     driver: local
+  pgadmin_data:
+    driver: local
+  clickhouse_data:
+    driver: local
 
 networks:
-  attributely_network:
-    driver: bridge
-
-# Comando para desarrollo rápido:
-# docker-compose up postgres redis backend
-
-# Comando para producción completa:
-# docker-compose --profile production up -d
+  default:
+    name: attributely_network

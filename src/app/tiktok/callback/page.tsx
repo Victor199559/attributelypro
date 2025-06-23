@@ -1,14 +1,17 @@
 'use client';
+
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function TikTokCallback() {
+// Componente que usa useSearchParams envuelto en Suspense
+function CallbackContent() {
   const searchParams = useSearchParams();
   const [code, setCode] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState(1);
   const [copied, setCopied] = useState(false);
+  const [result, setResult] = useState<any>(null);
 
   useEffect(() => {
     const authCode = searchParams?.get('code');
@@ -16,7 +19,7 @@ export default function TikTokCallback() {
     
     if (authCode) {
       setIsProcessing(true);
-      // Simular procesamiento
+      // Simular procesamiento inicial
       setTimeout(() => {
         setCode(authCode);
         setStep(2);
@@ -27,9 +30,13 @@ export default function TikTokCallback() {
 
   const copyToClipboard = async () => {
     if (code) {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      try {
+        await navigator.clipboard.writeText(code);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
     }
   };
 
@@ -48,16 +55,26 @@ export default function TikTokCallback() {
         body: JSON.stringify({ auth_code: code }),
       });
       
-      const result = await response.json();
+      const resultData = await response.json();
+      setResult(resultData);
       
       setTimeout(() => {
         setIsProcessing(false);
         setStep(4);
+        
+        // Si es exitoso, redirigir después de 5 segundos
+        if (resultData.status === 'success') {
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 5000);
+        }
       }, 3000);
       
     } catch (error) {
       console.error('Error:', error);
+      setResult({ status: 'error', message: 'Error connecting to backend' });
       setIsProcessing(false);
+      setStep(4);
     }
   };
 
@@ -66,14 +83,44 @@ export default function TikTokCallback() {
       {/* Fondo animado */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-full h-full">
-          <div className="absolute top-20 left-20 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-          <div className="absolute top-40 right-20 w-96 h-96 bg-yellow-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-          <div className="absolute -bottom-8 left-40 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+          <motion.div 
+            className="absolute top-20 left-20 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70"
+            animate={{
+              x: [0, 100, 0],
+              y: [0, -50, 0],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div 
+            className="absolute top-40 right-20 w-96 h-96 bg-yellow-500 rounded-full mix-blend-multiply filter blur-xl opacity-70"
+            animate={{
+              x: [0, -80, 0],
+              y: [0, 60, 0],
+              scale: [1, 0.8, 1],
+            }}
+            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          />
+          <motion.div 
+            className="absolute -bottom-8 left-40 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70"
+            animate={{
+              x: [0, 120, 0],
+              y: [0, -80, 0],
+              scale: [1, 1.1, 1],
+            }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+          />
         </div>
       </div>
 
       {/* Grid pattern overlay */}
-      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]" />
+      <div 
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px)',
+          backgroundSize: '50px 50px'
+        }}
+      />
       
       {/* Contenido principal */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-8">
@@ -92,7 +139,7 @@ export default function TikTokCallback() {
               className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full mb-6"
             >
               <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19.321 5.562a5.124 5.124 0 0 1-.443-.258 6.228 6.228 0 0 1-1.137-.966c-.849-.954-1.07-2.28-.591-3.429.089-.214.025-.46-.156-.606C16.735.146 16.38.004 16 .004c-.38 0-.735.142-.994.299-.181.146-.245.392-.156.606.479 1.149.258 2.475-.591 3.429a6.228 6.228 0 0 1-1.137.966c-.146.095-.297.175-.443.258C10.171 7.056 8 9.784 8 13v7c0 1.104.896 2 2 2h4c1.104 0 2-.896 2-2v-7c0-3.216-2.171-5.944-4.679-7.438z"/>
+                <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743l-.002-.001.002.001a2.895 2.895 0 0 1 3.183-4.51v-3.5a6.329 6.329 0 0 0-5.394 10.692 6.33 6.33 0 0 0 10.857-4.424V8.687a8.182 8.182 0 0 0 4.773 1.526V6.79a4.831 4.831 0 0 1-1.003-.104z"/>
               </svg>
             </motion.div>
             
@@ -246,9 +293,21 @@ export default function TikTokCallback() {
                   </p>
                   <div className="bg-black/30 rounded-xl p-4">
                     <div className="flex items-center justify-center space-x-2 text-blue-400">
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                      <motion.div 
+                        className="w-2 h-2 bg-blue-400 rounded-full"
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                      />
+                      <motion.div 
+                        className="w-2 h-2 bg-blue-400 rounded-full"
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.1 }}
+                      />
+                      <motion.div 
+                        className="w-2 h-2 bg-blue-400 rounded-full"
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                      />
                       <span className="ml-3 font-medium">Configurando API...</span>
                     </div>
                   </div>
@@ -262,57 +321,81 @@ export default function TikTokCallback() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: "spring", stiffness: 300 }}
-                className="bg-gradient-to-r from-green-500/20 to-blue-500/20 backdrop-blur-lg rounded-2xl p-8 border border-green-500/30"
+                className={`backdrop-blur-lg rounded-2xl p-8 border ${
+                  result?.status === 'success' 
+                    ? 'bg-gradient-to-r from-green-500/20 to-blue-500/20 border-green-500/30'
+                    : 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30'
+                }`}
               >
                 <div className="text-center">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2, type: "spring", stiffness: 400 }}
-                    className="w-20 h-20 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6"
+                    className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
+                      result?.status === 'success'
+                        ? 'bg-gradient-to-r from-green-400 to-blue-500'
+                        : 'bg-gradient-to-r from-red-400 to-orange-500'
+                    }`}
                   >
-                    <span className="text-3xl">🎉</span>
+                    <span className="text-3xl">
+                      {result?.status === 'success' ? '🎉' : '❌'}
+                    </span>
                   </motion.div>
                   
                   <h2 className="text-3xl font-bold text-white mb-4">
-                    ¡TikTok Completamente Conectado!
+                    {result?.status === 'success' 
+                      ? '¡TikTok Completamente Conectado!'
+                      : '❌ Error en la Integración'
+                    }
                   </h2>
                   
                   <p className="text-gray-300 mb-8 text-lg">
-                    El Neural Automatizador TikTok está ahora operativo y listo para optimizar tus campañas.
+                    {result?.status === 'success' 
+                      ? 'El Neural Automatizador TikTok está ahora operativo y listo para optimizar tus campañas.'
+                      : `Error: ${result?.message || 'Falló la conexión con TikTok'}`
+                    }
                   </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    {[
-                      { 
-                        icon: "🤖", 
-                        title: "Neural Automatizador", 
-                        desc: "Optimización 24/7 activada" 
-                      },
-                      { 
-                        icon: "📊", 
-                        title: "Analytics Avanzados", 
-                        desc: "Métricas en tiempo real" 
-                      },
-                      { 
-                        icon: "🎯", 
-                        title: "Targeting Inteligente", 
-                        desc: "Audiencias optimizadas con IA" 
-                      }
-                    ].map((feature, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 + index * 0.1 }}
-                        className="bg-black/30 rounded-xl p-4"
-                      >
-                        <div className="text-2xl mb-2">{feature.icon}</div>
-                        <h3 className="font-semibold text-white mb-1">{feature.title}</h3>
-                        <p className="text-sm text-gray-400">{feature.desc}</p>
-                      </motion.div>
-                    ))}
-                  </div>
+                  {result?.status === 'success' && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        {[
+                          { 
+                            icon: "🤖", 
+                            title: "Neural Automatizador", 
+                            desc: "Optimización 24/7 activada" 
+                          },
+                          { 
+                            icon: "📊", 
+                            title: "Analytics Avanzados", 
+                            desc: "Métricas en tiempo real" 
+                          },
+                          { 
+                            icon: "🎯", 
+                            title: "Targeting Inteligente", 
+                            desc: "Audiencias optimizadas con IA" 
+                          }
+                        ].map((feature, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4 + index * 0.1 }}
+                            className="bg-black/30 rounded-xl p-4"
+                          >
+                            <div className="text-2xl mb-2">{feature.icon}</div>
+                            <h3 className="font-semibold text-white mb-1">{feature.title}</h3>
+                            <p className="text-sm text-gray-400">{feature.desc}</p>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      <p className="text-sm text-gray-400 mb-6">
+                        Redirigiendo al dashboard en 5 segundos...
+                      </p>
+                    </>
+                  )}
 
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
@@ -346,35 +429,27 @@ export default function TikTokCallback() {
           </motion.div>
         </motion.div>
       </div>
-
-      <style jsx>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-        .bg-grid-white\\/\\[0\\.02\\] {
-          background-image: radial-gradient(circle, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-        }
-      `}</style>
     </div>
+  );
+}
+
+// Loading component para Suspense
+function CallbackLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-white text-lg">Cargando TikTok OAuth...</p>
+      </div>
+    </div>
+  );
+}
+
+// Componente principal con Suspense
+export default function TikTokCallback() {
+  return (
+    <Suspense fallback={<CallbackLoading />}>
+      <CallbackContent />
+    </Suspense>
   );
 }

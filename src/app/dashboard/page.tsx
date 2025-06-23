@@ -115,8 +115,8 @@ export default function Dashboard() {
 
   // ===== AWS BACKEND URL - TU EC2 REAL =====
   const AWS_BACKEND_URL = typeof window !== 'undefined' && window.location.hostname === 'localhost' 
-  ? 'http://3.16.108.83:8000'  // Desarrollo local - directo
-  : '/api/proxy';              // Producción Vercel - a través de proxy
+    ? 'http://3.16.108.83:8000'
+    : '/api/proxy';
 
   // ===== FETCH REAL ACCOUNT DATA FROM AWS BACKEND =====
   useEffect(() => {
@@ -281,7 +281,7 @@ export default function Dashboard() {
     // Refresh data every 30 seconds for real-time updates
     const interval = setInterval(fetchRealAccountData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [AWS_BACKEND_URL]);
 
   // ===== CALCULATED KPIS FROM REAL DATA =====
   const getKPIData = () => {
@@ -451,7 +451,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
-        {/* Sidebar Navigation - ACTUALIZADO CON TODAS LAS PÁGINAS */}
+        {/* Sidebar Navigation - URLs CORREGIDAS */}
         <div className="w-64 bg-white shadow-sm min-h-screen">
           <div className="flex flex-col h-full">
             {/* Logo */}
@@ -466,7 +466,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Navigation - COMPLETO CON TODAS LAS PÁGINAS */}
+            {/* Navigation - URLs CORREGIDAS A NIVEL APP */}
             <nav className="flex-1 px-4 py-6 space-y-2">
               <Link
                 href="/dashboard"
@@ -479,14 +479,14 @@ export default function Dashboard() {
                 )}
               </Link>
 
-              {/* Core Features */}
+              {/* Core Features - URLs CORREGIDAS */}
               <div className="pt-2">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
                   Core Features
                 </p>
                 
                 <Link
-                  href="/dashboard/audiences"
+                  href="/audiences"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <Users className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5" />
@@ -497,7 +497,7 @@ export default function Dashboard() {
                 </Link>
 
                 <Link
-                  href="/dashboard/campaigns"
+                  href="/campaigns"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <Megaphone className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5" />
@@ -508,7 +508,7 @@ export default function Dashboard() {
                 </Link>
 
                 <Link
-                  href="/dashboard/attribution"
+                  href="/attribution"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <Target className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5" />
@@ -519,7 +519,7 @@ export default function Dashboard() {
                 </Link>
 
                 <Link
-                  href="/dashboard/analytics"
+                  href="/analytics"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <Activity className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5" />
@@ -530,7 +530,7 @@ export default function Dashboard() {
                 </Link>
 
                 <Link
-                  href="/dashboard/reports"
+                  href="/reports"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <FileText className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5" />
@@ -538,14 +538,14 @@ export default function Dashboard() {
                 </Link>
               </div>
 
-              {/* AI Features */}
+              {/* AI Features - URLs CORREGIDAS */}
               <div className="pt-4">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
                   AI Features
                 </p>
 
                 <Link
-                  href="/dashboard/ai-insights"
+                  href="/ai-insights"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <Brain className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5" />
@@ -556,7 +556,7 @@ export default function Dashboard() {
                 </Link>
 
                 <Link
-                  href="/dashboard/profeta-creativo"
+                  href="/profeta-creativo"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <div className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5">🔮</div>
@@ -565,7 +565,7 @@ export default function Dashboard() {
                 </Link>
 
                 <Link
-                  href="/dashboard/fraud-detection"
+                  href="/fraud-detection"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <Shield className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5" />
@@ -576,7 +576,7 @@ export default function Dashboard() {
                 </Link>
 
                 <Link
-                  href="/dashboard/roi-predictor"
+                  href="/roi-predictor"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <Calculator className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5" />
@@ -587,14 +587,14 @@ export default function Dashboard() {
                 </Link>
               </div>
 
-              {/* Communication */}
+              {/* Communication - URL CORREGIDA */}
               <div className="pt-4">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
                   Communication
                 </p>
 
                 <Link
-                  href="/dashboard/whatsapp"
+                  href="/whatsapp"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <MessageCircle className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5" />
@@ -605,14 +605,14 @@ export default function Dashboard() {
                 </Link>
               </div>
 
-              {/* Settings & Privacy */}
+              {/* Settings & Privacy - URLs CORREGIDAS */}
               <div className="pt-4">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
                   Configuration
                 </p>
 
                 <Link
-                  href="/dashboard/settings"
+                  href="/settings"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <Settings className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5" />
@@ -620,7 +620,7 @@ export default function Dashboard() {
                 </Link>
 
                 <Link
-                  href="/dashboard/privacy"
+                  href="/privacy"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <Shield className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5" />
@@ -628,7 +628,7 @@ export default function Dashboard() {
                 </Link>
 
                 <Link
-                  href="/dashboard/terms"
+                  href="/terms"
                   className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-3 py-2 text-sm font-medium rounded-lg"
                 >
                   <FileText className="text-gray-400 group-hover:text-gray-600 mr-3 h-5 w-5" />
@@ -813,7 +813,7 @@ export default function Dashboard() {
                   <div className="text-right">
                     <div className="flex flex-col space-y-2">
                       <Link
-                        href="/dashboard/neural-automatizador"
+                        href="/neural-automatizador"
                         className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 backdrop-blur-sm flex items-center"
                       >
                         <Settings className="w-4 h-4 mr-2" />

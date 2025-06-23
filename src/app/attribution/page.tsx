@@ -110,7 +110,12 @@ export default function AttributionPage() {
     connectionStatus: 'Conectando...'
   });
 
-  // Conectar con Meta Ads API Real - SOLO EL ENDPOINT QUE FUNCIONA
+  // AWS Backend URL - Configuración híbrida
+  const AWS_BACKEND_URL = typeof window !== 'undefined' && window.location.hostname === 'localhost' 
+    ? 'http://3.16.108.83:8000'
+    : '/api/proxy';
+
+  // Conectar con Meta Ads API Real
   useEffect(() => {
     console.log('🔍 INICIANDO FETCH ATTRIBUTION...');
     const fetchRealData = async () => {
@@ -118,8 +123,8 @@ export default function AttributionPage() {
         setLoading(true);
         console.log('🚀 Haciendo fetch a Meta Ads API...');
         
-        // SOLO usar el endpoint que funciona
-        const response = await fetch('http://18.219.188.252/meta-ads/test-connection');
+        // Usar configuración híbrida
+        const response = await fetch(`${AWS_BACKEND_URL}/meta-ads/test-connection`);
         console.log('📡 Response recibido:', response);
         console.log('📊 Response OK:', response.ok);
         
@@ -166,7 +171,7 @@ export default function AttributionPage() {
     };
 
     fetchRealData();
-  }, []);
+  }, [AWS_BACKEND_URL]);
 
   // Generar datos de atribución basados en datos reales
   const generateAttributionData = (): AttributionData => {

@@ -1,8 +1,8 @@
 'use client';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 
-export default function YouTubeCallback() {
+function YouTubeCallbackContent() {
   const searchParams = useSearchParams();
   const [code, setCode] = useState('');
   const [state, setState] = useState('');
@@ -75,5 +75,17 @@ export default function YouTubeCallback() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function YouTubeCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-900 text-white p-8 flex items-center justify-center">
+        <div>Cargando...</div>
+      </div>
+    }>
+      <YouTubeCallbackContent />
+    </Suspense>
   );
 }

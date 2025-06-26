@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Master Orchestrator Class
 class AttributelyProOrchestrator {
-  private fastapi_url = 'https://api.attributelypro.com';
+  private fastapi_url = 'http://3.16.108.83:8000';
   private react_dashboard_url = 'http://3.16.108.83:3000';
   
   constructor() {

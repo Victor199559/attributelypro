@@ -148,26 +148,33 @@ export default function CampaignsPage() {
   const generateCampaignsFromMaster = (data: MasterOrchestratorData): Campaign[] => {
     const campaigns: Campaign[] = [];
     
+    // Validar que data y platforms existan
+    if (!data || !data.platforms) {
+      console.log('⚠️ Data o platforms no disponibles, usando campañas demo');
+      return generateDemoCampaigns();
+    }
+    
     // Meta Ads Campaigns (si está conectado)
-    if (data.platforms.meta_ads.connected) {
+    if (data.platforms.meta_ads?.connected) {
       const metaCampaigns = generateMetaCampaigns(data.platforms.meta_ads);
       campaigns.push(...metaCampaigns);
     }
     
     // Google Ads Campaigns (si está conectado)
-    if (data.platforms.google_ads.connected) {
+    if (data.platforms.google_ads?.connected) {
       const googleCampaigns = generateGoogleCampaigns(data.platforms.google_ads);
       campaigns.push(...googleCampaigns);
     }
     
     // TikTok Ads Campaigns (si está conectado)
-    if (data.platforms.tiktok_ads.connected) {
+    if (data.platforms.tiktok_ads?.connected) {
       const tiktokCampaigns = generateTikTokCampaigns(data.platforms.tiktok_ads);
       campaigns.push(...tiktokCampaigns);
     }
     
     // Si no hay plataformas conectadas, mostrar campañas demo
     if (campaigns.length === 0) {
+      console.log('📝 No hay plataformas conectadas, usando campañas demo');
       return generateDemoCampaigns();
     }
     
@@ -349,7 +356,16 @@ export default function CampaignsPage() {
   const generatePlatformData = () => {
     const platformData = [];
     
-    if (masterData?.platforms.meta_ads.connected) {
+    // Validar que masterData y platforms existan
+    if (!masterData?.platforms) {
+      console.log('⚠️ MasterData no disponible, usando datos demo para gráficos');
+      return [
+        { platform: 'Demo Facebook', campaigns: 2, spent: 3500, conversions: 89, roas: 4.8 },
+        { platform: 'Demo Google', campaigns: 1, spent: 1200, conversions: 34, roas: 6.1 }
+      ];
+    }
+    
+    if (masterData.platforms.meta_ads?.connected) {
       platformData.push({
         platform: 'Meta Ads',
         campaigns: masterData.platforms.meta_ads.total_campaigns || 0,
@@ -361,7 +377,7 @@ export default function CampaignsPage() {
       });
     }
     
-    if (masterData?.platforms.google_ads.connected) {
+    if (masterData.platforms.google_ads?.connected) {
       platformData.push({
         platform: 'Google Ads',
         campaigns: campaigns.filter(c => c.platform === 'google').length,
@@ -373,7 +389,7 @@ export default function CampaignsPage() {
       });
     }
     
-    if (masterData?.platforms.tiktok_ads.connected) {
+    if (masterData.platforms.tiktok_ads?.connected) {
       platformData.push({
         platform: 'TikTok Ads',
         campaigns: campaigns.filter(c => c.platform === 'tiktok').length,
@@ -403,48 +419,9 @@ export default function CampaignsPage() {
   const generateAIRecommendations = () => {
     const recommendations = [];
     
-    if ((masterData?.platforms.quintuple_ai.completion_percentage ?? 0) < 100) {
-      recommendations.push({
-        type: 'setup',
-        title: 'Completar Configuración Quintuple AI',
-        description: `Faltan configuraciones: ${masterData?.platforms.quintuple_ai.missing_configs.join(', ')}. Completitud: ${(masterData?.platforms.quintuple_ai.completion_percentage ?? 0)}%`,
-        impact: 'high',
-        potentialGain: 'Acceso completo a IA'
-      });
-    }
-    
-    if (masterData?.platforms.meta_ads.connected && masterData.platforms.meta_ads.total_campaigns === 0) {
-      recommendations.push({
-        type: 'campaign',
-        title: 'Crear Primera Campaña en Meta',
-        description: `Cuenta "${masterData.platforms.meta_ads.account_name}" conectada pero sin campañas activas`,
-        impact: 'high',
-        potentialGain: 'Primeras conversiones'
-      });
-    }
-    
-    if (masterData?.platforms.google_ads.connected) {
-      recommendations.push({
-        type: 'optimization',
-        title: 'Optimizar Google Ads',
-        description: `${masterData.platforms.google_ads.accessible_customers} cuenta(s) Google disponibles para optimización`,
-        impact: 'medium',
-        potentialGain: '+25% ROAS'
-      });
-    }
-    
-    if (!masterData?.platforms.youtube_ads.connected) {
-      recommendations.push({
-        type: 'expansion',
-        title: 'Expandir a YouTube Ads',
-        description: 'Oportunidad de alcanzar audiencia video con tus productos',
-        impact: 'medium',
-        potentialGain: 'Nueva audiencia'
-      });
-    }
-    
-    // Recomendaciones demo si no hay Master data
-    if (!masterData) {
+    // Validar que masterData exista
+    if (!masterData?.platforms) {
+      console.log('⚠️ MasterData no disponible, usando recomendaciones demo');
       return [
         {
           type: 'setup',
@@ -454,6 +431,46 @@ export default function CampaignsPage() {
           potentialGain: 'Acceso a IA real'
         }
       ];
+    }
+    
+    if (masterData.platforms.quintuple_ai?.completion_percentage < 100) {
+      recommendations.push({
+        type: 'setup',
+        title: 'Completar Configuración Quintuple AI',
+        description: `Faltan configuraciones: ${masterData.platforms.quintuple_ai.missing_configs?.join(', ') || 'N/A'}. Completitud: ${masterData.platforms.quintuple_ai.completion_percentage || 0}%`,
+        impact: 'high',
+        potentialGain: 'Acceso completo a IA'
+      });
+    }
+    
+    if (masterData.platforms.meta_ads?.connected && (masterData.platforms.meta_ads.total_campaigns || 0) === 0) {
+      recommendations.push({
+        type: 'campaign',
+        title: 'Crear Primera Campaña en Meta',
+        description: `Cuenta "${masterData.platforms.meta_ads.account_name || 'Meta Account'}" conectada pero sin campañas activas`,
+        impact: 'high',
+        potentialGain: 'Primeras conversiones'
+      });
+    }
+    
+    if (masterData.platforms.google_ads?.connected) {
+      recommendations.push({
+        type: 'optimization',
+        title: 'Optimizar Google Ads',
+        description: `${masterData.platforms.google_ads.accessible_customers || 0} cuenta(s) Google disponibles para optimización`,
+        impact: 'medium',
+        potentialGain: '+25% ROAS'
+      });
+    }
+    
+    if (!masterData.platforms.youtube_ads?.connected) {
+      recommendations.push({
+        type: 'expansion',
+        title: 'Expandir a YouTube Ads',
+        description: 'Oportunidad de alcanzar audiencia video con tus productos',
+        impact: 'medium',
+        potentialGain: 'Nueva audiencia'
+      });
     }
     
     return recommendations;
@@ -592,11 +609,11 @@ export default function CampaignsPage() {
               <button 
                 onClick={() => setShowCreateModal(true)}
                 className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
-                  masterData?.platforms.quintuple_ai.ready_for_campaigns
+                  masterData?.platforms?.quintuple_ai?.ready_for_campaigns
                     ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
-                disabled={!masterData?.platforms.quintuple_ai.ready_for_campaigns}
+                disabled={!masterData?.platforms?.quintuple_ai?.ready_for_campaigns}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Nueva Campaña
@@ -608,7 +625,7 @@ export default function CampaignsPage() {
 
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Indicador de Master Orchestrator Status */}
-        {masterData && (
+        {masterData?.platforms && (
           <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -616,21 +633,21 @@ export default function CampaignsPage() {
                 <div>
                   <h4 className="font-semibold text-green-900">✅ Master Orchestrator Conectado</h4>
                   <p className="text-sm text-green-700">
-                    {masterData.summary.total_connected} plataforma(s) conectada(s): 
-                    {masterData.platforms.meta_ads.connected && ' Meta Ads'}
-                    {masterData.platforms.google_ads.connected && ' Google Ads'}
-                    {masterData.platforms.tiktok_ads.connected && ' TikTok Ads'}
-                    {masterData.platforms.youtube_ads.connected && ' YouTube Ads'}
-                    • Quintuple AI: {masterData.platforms.quintuple_ai.completion_percentage}% completo
+                    {masterData.summary?.total_connected || 0} plataforma(s) conectada(s): 
+                    {masterData.platforms.meta_ads?.connected && ' Meta Ads'}
+                    {masterData.platforms.google_ads?.connected && ' Google Ads'}
+                    {masterData.platforms.tiktok_ads?.connected && ' TikTok Ads'}
+                    {masterData.platforms.youtube_ads?.connected && ' YouTube Ads'}
+                    • Quintuple AI: {masterData.platforms.quintuple_ai?.completion_percentage || 0}% completo
                   </p>
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-sm font-medium text-green-700">
-                  Sistema {masterData.summary.ready_percentage}% Listo
+                  Sistema {masterData.summary?.ready_percentage || 0}% Listo
                 </div>
                 <div className="text-xs text-green-600 mt-1">
-                  {masterData.summary.recommended_action}
+                  {masterData.summary?.recommended_action || 'Verificando estado...'}
                 </div>
               </div>
             </div>
@@ -638,16 +655,16 @@ export default function CampaignsPage() {
         )}
 
         {/* Alertas si hay configuraciones faltantes */}
-        {(masterData?.platforms.quintuple_ai.completion_percentage ?? 0) < 100 && (
+        {masterData?.platforms?.quintuple_ai && masterData.platforms.quintuple_ai.completion_percentage < 100 && (
           <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
             <div className="flex items-center">
               <AlertCircle className="w-5 h-5 text-yellow-600 mr-3" />
               <div>
                 <h4 className="font-semibold text-yellow-900">⚠️ Configuración Quintuple AI Incompleta</h4>
                 <p className="text-sm text-yellow-700">
-                  Faltan configuraciones: {masterData?.platforms.quintuple_ai.missing_configs?.join(', ')}
-                  • Completitud: {masterData?.platforms.quintuple_ai.completion_percentage}%
-                  • {masterData?.platforms.quintuple_ai.ready_for_campaigns ? 'Listo para campañas' : 'No listo para campañas'}
+                  Faltan configuraciones: {masterData.platforms.quintuple_ai.missing_configs?.join(', ') || 'Verificando...'}
+                  • Completitud: {masterData.platforms.quintuple_ai.completion_percentage || 0}%
+                  • {masterData.platforms.quintuple_ai.ready_for_campaigns ? 'Listo para campañas' : 'No listo para campañas'}
                 </p>
               </div>
             </div>
@@ -682,8 +699,8 @@ export default function CampaignsPage() {
                 <p className="text-2xl font-bold text-gray-900">${campaignMetrics.totalBudget.toLocaleString()}</p>
                 <p className="text-sm text-gray-600 mt-1">
                   ${campaignMetrics.totalSpent.toLocaleString()} gastado
-                  {(masterData?.summary.total_connected ?? 0) > 1 && (
-                    <span className="ml-1 text-xs text-purple-600">({masterData?.summary.total_connected ?? 0} plataformas)</span>
+                  {masterData?.summary && masterData.summary.total_connected > 1 && (
+                    <span className="ml-1 text-xs text-purple-600">({masterData.summary.total_connected} plataformas)</span>
                   )}
                 </p>
               </div>
@@ -840,7 +857,7 @@ export default function CampaignsPage() {
                     <Target className="w-5 h-5 mr-2 text-purple-600" />
                     {masterData ? 'Campañas del Master Orchestrator' : 'Top Campañas Demo'}
                   </h3>
-                  {masterData && (
+                  {masterData?.summary && (
                     <div className="flex items-center text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
                       <CheckCircle className="w-4 h-4 mr-1" />
                       {masterData.summary.total_connected} plataforma(s) conectada(s)
@@ -913,7 +930,7 @@ export default function CampaignsPage() {
                       </div>
                       <h3 className="text-lg font-medium text-gray-900 mb-2">No hay campañas disponibles</h3>
                       <p className="text-gray-600 mb-4">
-                        {masterData?.platforms.quintuple_ai.ready_for_campaigns 
+                        {masterData?.platforms?.quintuple_ai?.ready_for_campaigns 
                           ? 'Crea tu primera campaña para comenzar'
                           : 'Completa la configuración de Quintuple AI para crear campañas'
                         }
@@ -921,11 +938,11 @@ export default function CampaignsPage() {
                       <button 
                         onClick={() => setShowCreateModal(true)}
                         className={`px-4 py-2 rounded-lg transition-colors ${
-                          masterData?.platforms.quintuple_ai.ready_for_campaigns
+                          masterData?.platforms?.quintuple_ai?.ready_for_campaigns
                             ? 'bg-purple-600 text-white hover:bg-purple-700'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
-                        disabled={!masterData?.platforms.quintuple_ai.ready_for_campaigns}
+                        disabled={!masterData?.platforms?.quintuple_ai?.ready_for_campaigns}
                       >
                         Crear Primera Campaña
                       </button>
@@ -958,11 +975,11 @@ export default function CampaignsPage() {
                     <button 
                       onClick={() => setShowCreateModal(true)}
                       className={`px-4 py-2 rounded-lg transition-all ${
-                        masterData?.platforms.quintuple_ai.ready_for_campaigns
+                        masterData?.platforms?.quintuple_ai?.ready_for_campaigns
                           ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg'
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
-                      disabled={!masterData?.platforms.quintuple_ai.ready_for_campaigns}
+                      disabled={!masterData?.platforms?.quintuple_ai?.ready_for_campaigns}
                     >
                       <Plus className="w-4 h-4 mr-2 inline" />
                       Crear Campaña
@@ -1091,7 +1108,7 @@ export default function CampaignsPage() {
                             </div>
                             <h3 className="text-lg font-medium text-gray-900 mb-2">No hay campañas para administrar</h3>
                             <p className="text-gray-600 mb-4">
-                              {masterData?.platforms.quintuple_ai.ready_for_campaigns 
+                              {masterData?.platforms?.quintuple_ai?.ready_for_campaigns 
                                 ? 'Crea tu primera campaña para comenzar a administrar'
                                 : 'Completa la configuración de Quintuple AI para administrar campañas'
                               }
@@ -1323,28 +1340,28 @@ export default function CampaignsPage() {
               </button>
             </div>
             
-            {masterData?.platforms.quintuple_ai.ready_for_campaigns ? (
+            {masterData?.platforms?.quintuple_ai?.ready_for_campaigns ? (
               <div>
                 <p className="text-gray-600 mb-4">
                   Selecciona la plataforma para tu nueva campaña:
                 </p>
                 <div className="space-y-2">
-                  {masterData.platforms.meta_ads.connected && (
+                  {masterData.platforms.meta_ads?.connected && (
                     <button className="w-full p-3 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center">
                       <Facebook className="w-5 h-5 text-blue-600 mr-3" />
-                      <span>Meta Ads - {masterData.platforms.meta_ads.account_name}</span>
+                      <span>Meta Ads - {masterData.platforms.meta_ads.account_name || 'Cuenta Meta'}</span>
                     </button>
                   )}
-                  {masterData.platforms.google_ads.connected && (
+                  {masterData.platforms.google_ads?.connected && (
                     <button className="w-full p-3 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center">
                       <Search className="w-5 h-5 text-red-600 mr-3" />
-                      <span>Google Ads - {masterData.platforms.google_ads.customer_id}</span>
+                      <span>Google Ads - {masterData.platforms.google_ads.customer_id || 'Cuenta Google'}</span>
                     </button>
                   )}
-                  {masterData.platforms.tiktok_ads.connected && (
+                  {masterData.platforms.tiktok_ads?.connected && (
                     <button className="w-full p-3 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center">
                       <MousePointer className="w-5 h-5 text-black mr-3" />
-                      <span>TikTok Ads - {masterData.platforms.tiktok_ads.advertiser_count} cuenta(s)</span>
+                      <span>TikTok Ads - {masterData.platforms.tiktok_ads.advertiser_count || 0} cuenta(s)</span>
                     </button>
                   )}
                 </div>
@@ -1357,7 +1374,7 @@ export default function CampaignsPage() {
                   Completa la configuración de Quintuple AI antes de crear campañas.
                 </p>
                 <p className="text-sm text-gray-500">
-                  Faltan: {masterData?.platforms.quintuple_ai.missing_configs.join(', ')}
+                  Faltan: {masterData?.platforms?.quintuple_ai?.missing_configs?.join(', ') || 'Verificando configuraciones...'}
                 </p>
               </div>
             )}
@@ -1369,7 +1386,7 @@ export default function CampaignsPage() {
               >
                 Cancelar
               </button>
-              {masterData?.platforms.quintuple_ai.ready_for_campaigns && (
+              {masterData?.platforms?.quintuple_ai?.ready_for_campaigns && (
                 <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
                   Continuar
                 </button>

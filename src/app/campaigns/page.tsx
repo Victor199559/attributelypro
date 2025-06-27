@@ -390,10 +390,10 @@ export default function CampaignsPage() {
     if (masterData.platforms.tiktok_ads?.connected) {
       recommendations.push({
         type: 'expansion',
-        title: 'Lanzar en TikTok Ads',
-        description: 'TikTok Ads conectado. Perfecto para audiencias jóvenes y contenido de video.',
-        impact: 'medium',
-        potentialGain: 'Nueva audiencia Gen Z'
+        title: 'Lanzar Primera Campaña en TikTok',
+        description: `TikTok Ads API conectado exitosamente con ${masterData.platforms.tiktok_ads.advertiser_count} cuenta(s). Perfecto para audiencias Gen Z y contenido de video.`,
+        impact: 'high',
+        potentialGain: 'Nueva audiencia Gen Z masiva'
       });
     }
     
@@ -947,8 +947,8 @@ export default function CampaignsPage() {
                 {masterData?.platforms?.tiktok_ads?.connected && (
                   <button className="w-full p-3 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center">
                     <MousePointer className="w-5 h-5 text-black mr-3" />
-                    <span>TikTok Ads - {masterData.platforms.tiktok_ads.advertiser_count || 0} cuenta(s)</span>
-                    <span className="ml-auto text-xs text-green-600">Conectado</span>
+                    <span>TikTok Ads - {masterData.platforms.tiktok_ads.advertiser_count || 1} cuenta(s) conectada(s)</span>
+                    <span className="ml-auto text-xs text-green-600">✅ Conectado</span>
                   </button>
                 )}
                 

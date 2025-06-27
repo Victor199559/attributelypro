@@ -97,6 +97,50 @@ export default function CampaignsPage() {
   const [connectionStatus, setConnectionStatus] = useState<string>('Conectando...');
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
+  // Helper para normalizar datos del Master Orchestrator
+  const normalizeMasterData = (data: any): MasterOrchestratorData | null => {
+    if (!data || typeof data !== 'object') return null;
+    
+    return {
+      status: data.status || 'unknown',
+      platforms: {
+        quintuple_ai: {
+          connected: data.platforms?.quintuple_ai?.connected || false,
+          completion_percentage: data.platforms?.quintuple_ai?.completion_percentage || 0,
+          ready_for_campaigns: data.platforms?.quintuple_ai?.ready_for_campaigns || false,
+          missing_configs: data.platforms?.quintuple_ai?.missing_configs || []
+        },
+        meta_ads: {
+          connected: data.platforms?.meta_ads?.connected || false,
+          account_name: data.platforms?.meta_ads?.account_name || 'Sin nombre',
+          account_id: data.platforms?.meta_ads?.account_id || '',
+          has_campaigns: data.platforms?.meta_ads?.has_campaigns || false,
+          total_campaigns: data.platforms?.meta_ads?.total_campaigns || 0
+        },
+        google_ads: {
+          connected: data.platforms?.google_ads?.connected || false,
+          customer_id: data.platforms?.google_ads?.customer_id || '',
+          accessible_customers: data.platforms?.google_ads?.accessible_customers || 0
+        },
+        tiktok_ads: {
+          connected: data.platforms?.tiktok_ads?.connected || false,
+          advertiser_count: data.platforms?.tiktok_ads?.advertiser_count || 0
+        },
+        youtube_ads: {
+          connected: data.platforms?.youtube_ads?.connected || false
+        },
+        micro_budget: {
+          configured: data.platforms?.micro_budget?.configured || false
+        }
+      },
+      summary: {
+        total_connected: data.summary?.total_connected || 0,
+        ready_percentage: data.summary?.ready_percentage || 0,
+        recommended_action: data.summary?.recommended_action || 'Verificando estado del sistema...'
+      }
+    };
+  };
+
   // Conectar con Master Orchestrator
   useEffect(() => {
     console.log('🔍 CONECTANDO A MASTER ORCHESTRATOR...');
@@ -110,15 +154,25 @@ export default function CampaignsPage() {
         console.log('📡 Response recibido:', response);
         
         if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Master Data recibida:', data);
+          const rawData = await response.json();
+          console.log('✅ Master Data recibida:', rawData);
           
-          setMasterData(data);
-          setConnectionStatus('Conectado al Master Orchestrator');
+          // Normalizar datos con validaciones
+          const normalizedData = normalizeMasterData(rawData);
           
-          // Generar campañas basadas en plataformas conectadas
-          const generatedCampaigns = generateCampaignsFromMaster(data);
-          setCampaigns(generatedCampaigns);
+          if (normalizedData) {
+            setMasterData(normalizedData);
+            setConnectionStatus('Conectado al Master Orchestrator');
+            
+            // Generar campañas basadas en plataformas conectadas
+            const generatedCampaigns = generateCampaignsFromMaster(normalizedData);
+            setCampaigns(generatedCampaigns);
+          } else {
+            console.log('⚠️ Error normalizando datos del Master');
+            setConnectionStatus('Error procesando datos del Master');
+            const demoCampaigns = generateDemoCampaigns();
+            setCampaigns(demoCampaigns);
+          }
           
         } else {
           console.log('❌ Error en Master Orchestrator:', response.status);
@@ -577,7 +631,7 @@ export default function CampaignsPage() {
                   </h1>
                   <p className="text-sm text-gray-600">
                     {masterData ? 
-                      `${masterData.summary.total_connected} plataforma(s) conectada(s) • ${masterData.summary.ready_percentage}% listo`
+                      `${masterData.summary?.total_connected || 0} plataforma(s) conectada(s) • ${masterData.summary?.ready_percentage || 0}% listo`
                       : 'Administra todas tus campañas publicitarias'
                     }
                   </p>
@@ -961,9 +1015,9 @@ export default function CampaignsPage() {
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                     <Settings className="w-5 h-5 mr-2 text-purple-600" />
                     Administrador de Campañas
-                    {masterData && (
+                    {masterData?.summary && (
                       <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                        {masterData.summary.total_connected} plataforma(s) conectada(s)
+                        {masterData.summary.total_connected || 0} plataforma(s) conectada(s)
                       </span>
                     )}
                   </h3>
@@ -1303,9 +1357,9 @@ export default function CampaignsPage() {
                         <div>
                           <h4 className="font-semibold text-blue-900">Estado del Sistema</h4>
                           <p className="text-sm text-blue-700">
-                            {masterData.summary.total_connected} de 6 plataformas conectadas • 
-                            Sistema {masterData.summary.ready_percentage}% listo • 
-                            Quintuple AI: {masterData.platforms.quintuple_ai.completion_percentage}% completo
+                            {masterData.summary?.total_connected || 0} de 6 plataformas conectadas • 
+                            Sistema {masterData.summary?.ready_percentage || 0}% listo • 
+                            Quintuple AI: {masterData.platforms?.quintuple_ai?.completion_percentage || 0}% completo
                           </p>
                         </div>
                       </div>
@@ -1314,7 +1368,7 @@ export default function CampaignsPage() {
                           Próxima acción recomendada:
                         </div>
                         <div className="text-xs text-blue-600 mt-1">
-                          {masterData.summary.recommended_action}
+                          {masterData.summary?.recommended_action || 'Verificando recomendaciones...'}
                         </div>
                       </div>
                     </div>

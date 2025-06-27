@@ -17,35 +17,38 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
-// Interface para datos reales del Neural Engine
-interface RealDataType {
+// Interface para datos reales del Master Orchestrator
+interface MasterOrchestratorData {
   status: string;
-  user: {
-    id: string;
-    name: string;
-  };
-  sample_account: {
-    id: string;
-    name: string;
-    business: {
-      id: string;
-      name: string;
+  quintuple_ai: {
+    quintuple_ai_analysis: {
+      overall_completion: number;
+      platform_performance: any;
     };
   };
-  accounts_count: number;
-  neural_engine_active: boolean;
-  audience_discovery_running: boolean;
-  real_time_optimization: boolean;
+  platforms_status: {
+    meta: { status: string; completion: number; };
+    google: { status: string; completion: number; };
+    tiktok: { status: string; completion: number; };
+    youtube: { status: string; completion: number; };
+    micro: { status: string; completion: number; };
+  };
+  neural_status?: {
+    neural_automatizador: {
+      active_platforms: number;
+      completion_percentage: number;
+    };
+  };
 }
 
-// Tipos para Audiences Reales con IA
+// Tipos para Audiences Reales (inicialmente vacías)
 interface RealAudience {
   id: string;
   name: string;
   type: 'ai_discovered' | 'neural_lookalike' | 'predictive_behavioral' | 'real_time_conversion' | 'whatsapp_qualified';
   size: number;
   conversionRate: number;
-  status: 'active' | 'optimizing' | 'neural_analyzing';
+  status: 'active' | 'optimizing' | 'neural_analyzing' | 'pending_setup';
   lastUpdated: string;
   revenue: number;
   cpa: number;
@@ -69,235 +72,234 @@ export default function AudiencesPageReal() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [realData, setRealData] = useState<RealDataType | null>(null);
+  const [masterData, setMasterData] = useState<MasterOrchestratorData | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  // Conectar con Neural Engine Real - APIs Reales
+  // Conectar con Master Orchestrator Real
   useEffect(() => {
-    console.log('🧠 INICIANDO NEURAL AUDIENCE DISCOVERY...');
-    const fetchNeuralData = async () => {
+    console.log('🧠 CONECTANDO CON MASTER ORCHESTRATOR - AUDIENCES...');
+    const fetchMasterData = async () => {
       try {
-        console.log('🚀 Conectando con Neural Engine...');
+        console.log('🚀 Fetching Master Orchestrator data...');
+        setConnectionError(null);
         
-        // Conectar con múltiples APIs reales
-        const [metaResponse, neuralResponse, whatsappResponse] = await Promise.all([
-          fetch('http://18.219.188.252/meta-ads/test-connection'),
-          fetch('https://api.attributelypro.com/neural/audience-discovery'),
-          fetch('https://api.attributelypro.com/whatsapp/qualification-data')
-        ]);
+        // ✅ CONECTAR CON MASTER ORCHESTRATOR
+        const masterResponse = await fetch('/api/master');
         
-        console.log('📡 Responses recibidos:', { metaResponse, neuralResponse, whatsappResponse });
-        
-        if (metaResponse.ok) {
-          const metaData = await metaResponse.json();
-          console.log('✅ Meta Data:', metaData);
-          
-          if (metaData.status === 'success') {
-            // Simular neural engine activo
-            const neuralEnhancedData = {
-              ...metaData,
-              neural_engine_active: true,
-              audience_discovery_running: true,
-              real_time_optimization: true
-            };
-            
-            console.log('🧠 NEURAL ENGINE ACTIVADO:', neuralEnhancedData);
-            setRealData(neuralEnhancedData);
-          }
+        if (!masterResponse.ok) {
+          throw new Error('Master Orchestrator no disponible');
         }
-      } catch (error) {
-        console.error('🚨 ERROR EN NEURAL ENGINE:', error);
         
-        // Fallback: Simular neural engine con datos contextuales
-        setRealData({
-          status: 'success',
-          user: { id: '1', name: 'Neural Engine Demo' },
-          sample_account: {
-            id: '1',
-            name: 'AI Powered Account',
-            business: { id: '1', name: 'AttributelyPro Neural' }
+        const masterData = await masterResponse.json();
+        console.log('📊 Master Orchestrator - Audiences data:', masterData);
+        
+        setMasterData(masterData);
+        
+      } catch (error) {
+        console.error('🚨 ERROR CONECTANDO CON MASTER ORCHESTRATOR:', error);
+        setConnectionError(error instanceof Error ? error.message : 'Error de conexión');
+        
+        // Fallback: Estado inicial limpio
+        setMasterData({
+          status: 'error',
+          quintuple_ai: {
+            quintuple_ai_analysis: {
+              overall_completion: 0,
+              platform_performance: {}
+            }
           },
-          accounts_count: 1,
-          neural_engine_active: true,
-          audience_discovery_running: true,
-          real_time_optimization: true
+          platforms_status: {
+            meta: { status: 'disconnected', completion: 0 },
+            google: { status: 'disconnected', completion: 0 },
+            tiktok: { status: 'disconnected', completion: 0 },
+            youtube: { status: 'disconnected', completion: 0 },
+            micro: { status: 'disconnected', completion: 0 }
+          }
         });
       } finally {
-        console.log('🏁 Neural Engine initialized');
+        console.log('🏁 Master Orchestrator - Audiences initialized');
         setLoading(false);
       }
     };
 
-    fetchNeuralData();
+    fetchMasterData();
+    
+    // Refresh cada 30 segundos
+    const interval = setInterval(fetchMasterData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Generar audiencias 100% reales con Neural IA
+  // Generar audiencias reales (inicialmente vacías pero con estructura real)
   const generateRealAudiences = (): RealAudience[] => {
-    const multiplier = realData?.accounts_count || 1;
+    if (!masterData || connectionError) {
+      return []; // Sin conexión = sin audiencias
+    }
+
+    const quintuple_completion = masterData.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0;
+    const platforms = masterData.platforms_status || {};
     
-    return [
-      {
-        id: '1',
-        name: 'AI Discovered High-Intent Users',
-        type: 'ai_discovered',
-        size: 28750 * multiplier,
-        conversionRate: 18.9,
-        status: 'active',
-        lastUpdated: '12 minutos',
-        revenue: 287500 * multiplier,
-        cpa: 15.20,
-        roas: 12.4,
-        neural_confidence: 96.7,
-        source: 'Neural Audience Discovery Engine',
-        ai_insights: [
-          'Patrón único: Engagement WhatsApp + Email simultáneo',
-          'Predicción: +45% revenue próximos 30 días',
-          'Recomendación: Aumentar budget +60%'
-        ]
-      },
-      {
-        id: '2', 
-        name: 'Real-Time WhatsApp Qualifiers',
-        type: 'whatsapp_qualified',
-        size: 15890 * multiplier,
-        conversionRate: 24.6,
-        status: 'optimizing',
-        lastUpdated: '3 minutos',
-        revenue: 445600 * multiplier,
-        cpa: 22.80,
-        roas: 15.8,
-        neural_confidence: 94.2,
-        source: 'WhatsApp Business API + Neural Qualification',
-        ai_insights: [
-          'Score promedio: 8.9/10 qualification',
-          'Tiempo promedio cierre: 2.3 días',
-          'Cross-sell opportunity: 78%'
-        ]
-      },
-      {
-        id: '3',
-        name: 'Neural Lookalike Premium Buyers',
-        type: 'neural_lookalike',
-        size: 45200 * multiplier,
-        conversionRate: 14.8,
-        status: 'active',
-        lastUpdated: '8 minutos',
-        revenue: 356200 * multiplier,
-        cpa: 28.40,
-        roas: 9.7,
-        neural_confidence: 91.5,
-        source: 'Deep Learning Lookalike Algorithm',
-        ai_insights: [
-          'Similitud: 94% con top 1% customers',
-          'Predicción LTV: $2,450 por usuario',
-          'Optimal touchpoints: 4.2 promedio'
-        ]
-      },
-      {
-        id: '4',
-        name: 'Predictive Cart Abandoners',
-        type: 'predictive_behavioral',
-        size: 12650 * multiplier,
-        conversionRate: 31.2,
-        status: 'neural_analyzing',
-        lastUpdated: '1 minuto',
-        revenue: 189400 * multiplier,
-        cpa: 18.90,
-        roas: 16.9,
-        neural_confidence: 98.1,
-        source: 'Predictive Behavioral Analytics',
-        ai_insights: [
-          'Patrón detectado: Abandon timing predecible',
-          'Optimal intervention: 47 minutos post-abandon',
-          'Recovery rate: 31.2% (industry avg: 8%)'
-        ]
-      },
-      {
-        id: '5',
-        name: 'Real-Time Cross-Platform Converters',
-        type: 'real_time_conversion',
-        size: 8940 * multiplier,
-        conversionRate: 28.7,
-        status: 'active',
+    // Si Quintuple AI está bajo 50%, solo mostrar audiencias pending
+    if (quintuple_completion < 50) {
+      return [
+        {
+          id: '1',
+          name: 'Neural Audience Discovery - Setup Required',
+          type: 'ai_discovered',
+          size: 0,
+          conversionRate: 0,
+          status: 'pending_setup',
+          lastUpdated: 'Esperando configuración',
+          revenue: 0,
+          cpa: 0,
+          roas: 0,
+          neural_confidence: 0,
+          source: 'Neural Engine - Awaiting Platform Setup',
+          ai_insights: [
+            'Requiere completar configuración del Quintuple AI',
+            'Conectar todas las plataformas para comenzar discovery',
+            'Una vez activo: Descubrimiento automático de audiencias 24/7'
+          ]
+        }
+      ];
+    }
+
+    // Si está 50%+, generar audiencias con datos reales mínimos
+    const audiencias = [];
+    
+    if (platforms.meta?.status === 'connected') {
+      audiencias.push({
+        id: 'meta_1',
+        name: 'Meta AI - High Intent Users',
+        type: 'ai_discovered' as const,
+        size: 0, // Real data: 0 porque no hay eventos aún
+        conversionRate: 0,
+        status: 'active' as const,
         lastUpdated: 'Tiempo real',
-        revenue: 425800 * multiplier,
-        cpa: 45.20,
-        roas: 18.9,
-        neural_confidence: 99.3,
-        source: 'Real-Time Attribution Engine',
+        revenue: 0,
+        cpa: 0,
+        roas: 0,
+        neural_confidence: platforms.meta.completion || 0,
+        source: 'Meta Ads Neural Engine',
         ai_insights: [
-          'Multi-touch journey: 5.8 touchpoints promedio',
-          'Conversion window: 3.2 días optimizado',
-          'Channel contribution: WhatsApp 67%, Meta 23%, Email 10%'
+          'Plataforma conectada - esperando eventos',
+          'Neural engine listo para discovery',
+          'Configurar tracking para comenzar análisis'
         ]
-      }
-    ];
+      });
+    }
+
+    if (platforms.google?.status === 'connected_with_format_issue' || platforms.google?.status === 'connected') {
+      audiencias.push({
+        id: 'google_1',
+        name: 'Google AI - Performance Max Audience',
+        type: 'neural_lookalike' as const,
+        size: 0,
+        conversionRate: 0,
+        status: 'active' as const,
+        lastUpdated: 'Tiempo real',
+        revenue: 0,
+        cpa: 0,
+        roas: 0,
+        neural_confidence: platforms.google.completion || 0,
+        source: 'Google Ads Neural Analysis',
+        ai_insights: [
+          'Google Ads conectado y listo',
+          'Esperando datos de campaigns',
+          'Performance Max optimization disponible'
+        ]
+      });
+    }
+
+    if (platforms.tiktok?.status === 'connected') {
+      audiencias.push({
+        id: 'tiktok_1',
+        name: 'TikTok AI - Viral Content Audience',
+        type: 'predictive_behavioral' as const,
+        size: 0,
+        conversionRate: 0,
+        status: 'active' as const,
+        lastUpdated: 'Tiempo real',
+        revenue: 0,
+        cpa: 0,
+        roas: 0,
+        neural_confidence: platforms.tiktok.completion || 0,
+        source: 'TikTok Ads Neural Engine',
+        ai_insights: [
+          'TikTok conectado - neural engine activo',
+          'Esperando datos de engagement',
+          'Viral content prediction disponible'
+        ]
+      });
+    }
+
+    return audiencias;
   };
 
   const realAudiences = generateRealAudiences();
 
-  // Performance data basada en neural optimization
+  // Performance data real (todo en 0 inicialmente)
   const neuralPerformanceData = [
-    { month: 'Ene', ai_discovered: 89000, neural_lookalike: 67000, whatsapp_qualified: 123000, predictive: 45000 },
-    { month: 'Feb', ai_discovered: 125000, neural_lookalike: 89000, whatsapp_qualified: 167000, predictive: 67000 },
-    { month: 'Mar', ai_discovered: 156000, neural_lookalike: 112000, whatsapp_qualified: 234000, predictive: 89000 },
-    { month: 'Abr', ai_discovered: 234000, neural_lookalike: 145000, whatsapp_qualified: 312000, predictive: 123000 },
-    { month: 'May', ai_discovered: 287000, neural_lookalike: 189000, whatsapp_qualified: 445000, predictive: 156000 },
-    { month: 'Jun', ai_discovered: 356000, neural_lookalike: 234000, whatsapp_qualified: 567000, predictive: 198000 }
+    { month: 'Ene', ai_discovered: 0, neural_lookalike: 0, whatsapp_qualified: 0, predictive: 0 },
+    { month: 'Feb', ai_discovered: 0, neural_lookalike: 0, whatsapp_qualified: 0, predictive: 0 },
+    { month: 'Mar', ai_discovered: 0, neural_lookalike: 0, whatsapp_qualified: 0, predictive: 0 },
+    { month: 'Abr', ai_discovered: 0, neural_lookalike: 0, whatsapp_qualified: 0, predictive: 0 },
+    { month: 'May', ai_discovered: 0, neural_lookalike: 0, whatsapp_qualified: 0, predictive: 0 },
+    { month: 'Jun', ai_discovered: 0, neural_lookalike: 0, whatsapp_qualified: 0, predictive: 0 }
   ];
 
-  // Datos demográficos con neural insights
+  // Datos demográficos reales (todo en 0 inicialmente)
   const neuralDemographicData: AudienceInsight[] = [
-    { demographic: 'AI Segment A (25-34)', percentage: 47.8, color: '#8B5CF6' },
-    { demographic: 'AI Segment B (35-44)', percentage: 32.1, color: '#06D6A0' },
-    { demographic: 'AI Segment C (45-54)', percentage: 15.6, color: '#FFD166' },
-    { demographic: 'AI Segment D (18-24)', percentage: 3.8, color: '#F72585' },
-    { demographic: 'AI Segment E (55+)', percentage: 0.7, color: '#4CC9F0' }
+    { demographic: 'Esperando datos...', percentage: 100, color: '#E5E7EB' }
   ];
 
   const realChannelData = [
-    { channel: 'WhatsApp Neural Qualification', audiences: 15, totalSize: 445600, avgCR: 24.6 },
-    { channel: 'Meta Ads AI Optimization', audiences: 28, totalSize: 356200, avgCR: 18.9 },
-    { channel: 'Neural Email Sequences', audiences: 12, totalSize: 189400, avgCR: 16.4 },
-    { channel: 'Predictive Retargeting', audiences: 8, totalSize: 287500, avgCR: 14.8 },
-    { channel: 'Cross-Platform Attribution', audiences: 6, totalSize: 425800, avgCR: 31.2 }
+    { channel: 'Meta Ads Neural Engine', audiences: realAudiences.filter(a => a.source.includes('Meta')).length, totalSize: 0, avgCR: 0 },
+    { channel: 'Google Ads AI Optimization', audiences: realAudiences.filter(a => a.source.includes('Google')).length, totalSize: 0, avgCR: 0 },
+    { channel: 'TikTok Neural Discovery', audiences: realAudiences.filter(a => a.source.includes('TikTok')).length, totalSize: 0, avgCR: 0 },
+    { channel: 'WhatsApp Qualification Bot', audiences: 0, totalSize: 0, avgCR: 0 },
+    { channel: 'Cross-Platform Attribution', audiences: 0, totalSize: 0, avgCR: 0 }
   ];
 
   const neuralTemplates = [
     {
       name: 'AI High-Intent Discovery',
       description: 'Neural engine encuentra usuarios con alta intención de compra',
-      estimatedSize: '25K-35K',
-      conversionRate: '18.9%',
-      neural_confidence: '96.7%',
+      estimatedSize: 'Esperando setup',
+      conversionRate: 'TBD',
+      neural_confidence: masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion + '%' || '0%',
       icon: Brain,
-      color: 'from-purple-500 to-indigo-600'
+      color: 'from-purple-500 to-indigo-600',
+      available: (masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0) >= 50
     },
     {
       name: 'WhatsApp Qualification Bot',
       description: 'IA califica leads automáticamente vía WhatsApp Business',
-      estimatedSize: '15K-20K',
-      conversionRate: '24.6%',
-      neural_confidence: '94.2%',
+      estimatedSize: 'Setup required',
+      conversionRate: 'TBD',
+      neural_confidence: '0%',
       icon: MessageCircle,
-      color: 'from-green-500 to-emerald-600'
+      color: 'from-green-500 to-emerald-600',
+      available: false
     },
     {
       name: 'Predictive Cart Recovery',
       description: 'Predice y previene abandono de carrito con timing perfecto',
-      estimatedSize: '12K-15K',
-      conversionRate: '31.2%',
-      neural_confidence: '98.1%',
+      estimatedSize: 'Setup required',
+      conversionRate: 'TBD',
+      neural_confidence: '0%',
       icon: ShoppingCart,
-      color: 'from-red-500 to-pink-600'
+      color: 'from-red-500 to-pink-600',
+      available: false
     },
     {
       name: 'Cross-Platform Attribution',
       description: 'Rastrea customer journey completo en tiempo real',
-      estimatedSize: '8K-12K',
-      conversionRate: '28.7%',
-      neural_confidence: '99.3%',
+      estimatedSize: 'Setup required',
+      conversionRate: 'TBD',
+      neural_confidence: masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion + '%' || '0%',
       icon: Crosshair,
-      color: 'from-blue-500 to-cyan-600'
+      color: 'from-blue-500 to-cyan-600',
+      available: (masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0) >= 78
     }
   ];
 
@@ -317,6 +319,7 @@ export default function AudiencesPageReal() {
       case 'active': return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'optimizing': return <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />;
       case 'neural_analyzing': return <Brain className="w-4 h-4 text-purple-600 animate-pulse" />;
+      case 'pending_setup': return <AlertTriangle className="w-4 h-4 text-yellow-600" />;
       default: return <AlertTriangle className="w-4 h-4 text-gray-600" />;
     }
   };
@@ -337,8 +340,8 @@ export default function AudiencesPageReal() {
               <div className="absolute inset-0 border-4 border-transparent border-t-purple-600 rounded-full animate-spin"></div>
               <Brain className="w-6 h-6 text-purple-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Iniciando Neural Audience Engine</h3>
-            <p className="text-gray-600">Conectando con APIs reales y activando IA...</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Conectando con Master Orchestrator</h3>
+            <p className="text-gray-600">Cargando datos reales de audiencias...</p>
           </div>
         </div>
       </div>
@@ -347,7 +350,7 @@ export default function AudiencesPageReal() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
-      {/* Header con Neural Status */}
+      {/* Header con Master Orchestrator Status */}
       <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
@@ -369,32 +372,48 @@ export default function AudiencesPageReal() {
                     Neural Audience Engine
                   </h1>
                   <p className="text-sm text-gray-600">
-                    IA descubriendo audiencias rentables en tiempo real
+                    {connectionError ? 'Master Orchestrator offline' : 'Conectado al Master Orchestrator'}
                   </p>
                 </div>
               </div>
 
-              {/* Neural Engine Status */}
+              {/* Master Orchestrator Status */}
               <div className="flex items-center space-x-2">
-                <div className="flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                  <div className="w-2 h-2 rounded-full mr-2 bg-green-500 animate-pulse"></div>
-                  Neural Engine Activo
-                </div>
-                <div className="flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                  <Brain className="w-3 h-3 mr-1" />
-                  IA Optimizando
-                </div>
+                {connectionError ? (
+                  <div className="flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                    <div className="w-2 h-2 rounded-full mr-2 bg-red-500"></div>
+                    Master Offline
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      <div className="w-2 h-2 rounded-full mr-2 bg-green-500 animate-pulse"></div>
+                      Master Connected
+                    </div>
+                    <div className="flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                      <Brain className="w-3 h-3 mr-1" />
+                      {masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0}% Ready
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
-              <button className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all duration-200">
+              <button 
+                className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
+                  (masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0) >= 50
+                    ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:shadow-lg'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
+                disabled={(masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0) < 50}
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                Crear con IA
+                {(masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0) >= 50 ? 'Crear con IA' : 'Setup Required'}
               </button>
               <button className="flex items-center px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                 <Download className="w-4 h-4 mr-2" />
-                Exportar Insights
+                Exportar Datos
               </button>
             </div>
           </div>
@@ -402,21 +421,39 @@ export default function AudiencesPageReal() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
-        {/* Neural Engine Alert */}
-        <div className="mb-6 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-4">
-          <div className="flex items-center">
-            <Brain className="w-5 h-5 text-purple-600 mr-3" />
-            <div>
-              <h4 className="font-semibold text-purple-900">
-                🚀 Neural Audience Discovery Activo
-              </h4>
-              <p className="text-sm text-purple-700">
-                El motor de IA está analizando {realAudiences.reduce((sum, aud) => sum + aud.size, 0).toLocaleString()} usuarios en tiempo real. 
-                Confianza promedio: {(realAudiences.reduce((sum, aud) => sum + aud.neural_confidence, 0) / realAudiences.length).toFixed(1)}%
-              </p>
+        {/* Connection Status Alert */}
+        {connectionError ? (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+            <div className="flex items-center">
+              <AlertTriangle className="w-5 h-5 text-red-600 mr-3" />
+              <div>
+                <h4 className="font-semibold text-red-900">
+                  ⚠️ Master Orchestrator No Disponible
+                </h4>
+                <p className="text-sm text-red-700">
+                  No se puede conectar con /api/master. Las audiencias neurales requieren conexión activa.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="mb-6 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-4">
+            <div className="flex items-center">
+              <Brain className="w-5 h-5 text-purple-600 mr-3" />
+              <div>
+                <h4 className="font-semibold text-purple-900">
+                  🚀 Neural Audience Discovery {(masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0) >= 50 ? 'Activo' : 'Pendiente'}
+                </h4>
+                <p className="text-sm text-purple-700">
+                  {(masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0) >= 50 
+                    ? `Quintuple AI al ${masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion}% - Listo para comenzar discovery de audiencias`
+                    : `Quintuple AI al ${masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0}% - Completa setup para activar neural discovery`
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Navigation Tabs */}
         <div className="bg-white rounded-xl p-1 mb-6 shadow-sm border border-gray-100">
@@ -451,7 +488,7 @@ export default function AudiencesPageReal() {
           {/* Neural Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-6 animate-fade-in">
-              {/* KPI Cards con Neural Data */}
+              {/* KPI Cards con datos reales */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
@@ -460,7 +497,7 @@ export default function AudiencesPageReal() {
                       <p className="text-2xl font-bold text-gray-900">{realAudiences.length}</p>
                       <p className="text-sm text-purple-600 flex items-center mt-1">
                         <Brain className="w-3 h-3 mr-1" />
-                        96.7% confianza IA
+                        {(masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0)}% setup
                       </p>
                     </div>
                     <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -476,9 +513,9 @@ export default function AudiencesPageReal() {
                       <p className="text-2xl font-bold text-gray-900">
                         {realAudiences.reduce((sum, aud) => sum + aud.size, 0).toLocaleString()}
                       </p>
-                      <p className="text-sm text-green-600 flex items-center mt-1">
-                        <ArrowUp className="w-3 h-3 mr-1" />
-                        Neural optimization
+                      <p className="text-sm text-gray-600 flex items-center mt-1">
+                        <Target className="w-3 h-3 mr-1" />
+                        Esperando eventos
                       </p>
                     </div>
                     <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
@@ -491,12 +528,10 @@ export default function AudiencesPageReal() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Conv. Rate Neural</p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {(realAudiences.reduce((sum, aud) => sum + aud.conversionRate, 0) / realAudiences.length).toFixed(1)}%
-                      </p>
-                      <p className="text-sm text-green-600 flex items-center mt-1">
+                      <p className="text-2xl font-bold text-gray-900">0%</p>
+                      <p className="text-sm text-gray-600 flex items-center mt-1">
                         <Zap className="w-3 h-3 mr-1" />
-                        IA optimizando 24/7
+                        Esperando datos
                       </p>
                     </div>
                     <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
@@ -509,12 +544,10 @@ export default function AudiencesPageReal() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Revenue Predicho</p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        ${realAudiences.reduce((sum, aud) => sum + aud.revenue, 0).toLocaleString()}
-                      </p>
-                      <p className="text-sm text-green-600 flex items-center mt-1">
+                      <p className="text-2xl font-bold text-gray-900">$0</p>
+                      <p className="text-sm text-gray-600 flex items-center mt-1">
                         <TrendingUp className="w-3 h-3 mr-1" />
-                        Predicción neural
+                        Esperando tracking
                       </p>
                     </div>
                     <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -552,9 +585,11 @@ export default function AudiencesPageReal() {
                     </select>
                   </div>
                   <div className="flex items-center space-x-4">
-                    <div className="flex items-center text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                    <div className={`flex items-center text-sm px-3 py-1 rounded-full ${
+                      connectionError ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50'
+                    }`}>
                       <CheckCircle className="w-4 h-4 mr-1" />
-                      Neural Engine Live
+                      {connectionError ? 'Master Offline' : 'Master Connected'}
                     </div>
                     <span className="text-sm text-gray-600">
                       {filteredAudiences.length} audiencias neurales
@@ -565,117 +600,134 @@ export default function AudiencesPageReal() {
 
               {/* Tabla Neural Audiences */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Audiencia Neural
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Tipo IA
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Tamaño
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Conv. Rate
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Revenue
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Neural Confidence
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Estado
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          AI Insights
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredAudiences.map((audience) => (
-                        <tr key={audience.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                checked={selectedAudiences.includes(audience.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedAudiences([...selectedAudiences, audience.id]);
-                                  } else {
-                                    setSelectedAudiences(selectedAudiences.filter(id => id !== audience.id));
-                                  }
-                                }}
-                                className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                              />
-                              <div>
-                                <div className="text-sm font-medium text-gray-900 flex items-center">
-                                  {audience.name}
-                                  <Brain className="w-3 h-3 ml-2 text-purple-500" />
-                                </div>
-                                <div className="text-sm text-gray-500">{audience.source}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(audience.type)}`}>
-                              {audience.type.replace('_', ' ')}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {audience.size.toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`text-sm font-medium ${
-                              audience.conversionRate >= 20 ? 'text-green-600' : 
-                              audience.conversionRate >= 15 ? 'text-green-600' : 
-                              audience.conversionRate >= 10 ? 'text-yellow-600' : 'text-red-600'
-                            }`}>
-                              {audience.conversionRate}%
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${audience.revenue.toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
-                                <div 
-                                  className="bg-purple-600 h-2 rounded-full" 
-                                  style={{ width: `${audience.neural_confidence}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-medium text-purple-600">
-                                {audience.neural_confidence}%
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              {getStatusIcon(audience.status)}
-                              <span className="ml-2 text-sm text-gray-900 capitalize">
-                                {audience.status.replace('_', ' ')}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="space-y-1">
-                              {audience.ai_insights?.slice(0, 2).map((insight, idx) => (
-                                <div key={idx} className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
-                                  {insight}
-                                </div>
-                              ))}
-                            </div>
-                          </td>
+                {realAudiences.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Audiencia Neural
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Tipo IA
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Tamaño
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Conv. Rate
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Revenue
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Neural Confidence
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Estado
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            AI Insights
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredAudiences.map((audience) => (
+                          <tr key={audience.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedAudiences.includes(audience.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedAudiences([...selectedAudiences, audience.id]);
+                                    } else {
+                                      setSelectedAudiences(selectedAudiences.filter(id => id !== audience.id));
+                                    }
+                                  }}
+                                  className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                                />
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900 flex items-center">
+                                    {audience.name}
+                                    <Brain className="w-3 h-3 ml-2 text-purple-500" />
+                                  </div>
+                                  <div className="text-sm text-gray-500">{audience.source}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(audience.type)}`}>
+                                {audience.type.replace('_', ' ')}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {audience.size.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm font-medium text-gray-600">
+                                {audience.conversionRate}%
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              ${audience.revenue.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
+                                  <div 
+                                    className="bg-purple-600 h-2 rounded-full" 
+                                    style={{ width: `${audience.neural_confidence}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm font-medium text-purple-600">
+                                  {audience.neural_confidence}%
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                {getStatusIcon(audience.status)}
+                                <span className="ml-2 text-sm text-gray-900 capitalize">
+                                  {audience.status.replace('_', ' ')}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="space-y-1">
+                                {audience.ai_insights?.slice(0, 2).map((insight, idx) => (
+                                  <div key={idx} className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                                    {insight}
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Brain className="mx-auto text-gray-400 mb-4" size={48} />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Sin Audiencias Neurales</h3>
+                    <p className="text-gray-500 mb-4">
+                      {connectionError 
+                        ? 'Necesitas conectar con Master Orchestrator para comenzar'
+                        : (masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0) < 50
+                          ? 'Completa la configuración del Quintuple AI para activar neural discovery'
+                          : 'Crea tu primera audiencia neural o configura tracking para comenzar'
+                      }
+                    </p>
+                    {!connectionError && (masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0) >= 50 && (
+                      <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm">
+                        <Plus className="w-4 h-4 mr-2 inline" />
+                        Crear Primera Audiencia Neural
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Neural Performance Chart */}
@@ -685,9 +737,11 @@ export default function AudiencesPageReal() {
                     <Activity className="w-5 h-5 mr-2 text-purple-600" />
                     Performance Neural Engine por Tipo
                   </h3>
-                  <div className="flex items-center text-sm text-purple-600 bg-purple-50 px-3 py-1 rounded-full">
+                  <div className={`flex items-center text-sm px-3 py-1 rounded-full ${
+                    connectionError ? 'text-red-600 bg-red-50' : 'text-purple-600 bg-purple-50'
+                  }`}>
                     <Brain className="w-4 h-4 mr-1" />
-                    IA Optimizado 24/7
+                    {connectionError ? 'Master Offline' : 'Master Connected'}
                   </div>
                 </div>
                 <div style={{ height: '300px' }}>
@@ -705,6 +759,13 @@ export default function AudiencesPageReal() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+                {realAudiences.length === 0 && (
+                  <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+                    <div className="text-center">
+                      <p className="text-gray-500 text-sm">Esperando datos para mostrar performance...</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -718,123 +779,147 @@ export default function AudiencesPageReal() {
                   <h3 className="text-lg font-semibold text-gray-900">Neural Audience Builder</h3>
                   <div className="ml-auto flex items-center space-x-2 bg-purple-100 px-3 py-1 rounded-full">
                     <Brain className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm font-medium text-purple-700">Powered by Neural Engine</span>
+                    <span className="text-sm font-medium text-purple-700">
+                      {connectionError ? 'Offline' : 'Master Connected'}
+                    </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Neural Configuration */}
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nombre de Audiencia Neural
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Mi audiencia con IA discovery"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
-                    </div>
+                {connectionError || (masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0) < 50 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-xl">
+                    <AlertTriangle className="mx-auto text-gray-400 mb-4" size={48} />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Neural Builder No Disponible</h3>
+                    <p className="text-gray-500 mb-4">
+                      {connectionError 
+                        ? 'Necesitas conectar con Master Orchestrator'
+                        : `Quintuple AI al ${masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0}% - Necesitas al menos 50% para usar Neural Builder`
+                      }
+                    </p>
+                    <Link
+                      href="/dashboard"
+                      className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Volver al Dashboard
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Neural Configuration */}
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Nombre de Audiencia Neural
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Mi audiencia con IA discovery"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Tipo de Neural Engine
-                      </label>
-                      <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        <option>AI Discovery Engine</option>
-                        <option>Neural Lookalike Algorithm</option>
-                        <option>Predictive Behavioral Analysis</option>
-                        <option>Real-Time Conversion Tracking</option>
-                        <option>WhatsApp Neural Qualification</option>
-                      </select>
-                    </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Tipo de Neural Engine
+                        </label>
+                        <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                          <option>AI Discovery Engine</option>
+                          <option>Neural Lookalike Algorithm</option>
+                          <option>Predictive Behavioral Analysis</option>
+                          <option>Real-Time Conversion Tracking</option>
+                          <option>WhatsApp Neural Qualification</option>
+                        </select>
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Neural Optimization Goals
-                      </label>
-                      <div className="space-y-3">
-                        {[
-                          { id: 'revenue', label: 'Maximizar Revenue (ROAS > 15x)', checked: true },
-                          { id: 'conversion', label: 'Optimizar Conversion Rate (>20%)', checked: true },
-                          { id: 'ltv', label: 'Predecir Customer Lifetime Value', checked: false },
-                          { id: 'whatsapp', label: 'Qualification Score WhatsApp (>8/10)', checked: false }
-                        ].map((goal) => (
-                          <div key={goal.id} className="flex items-center">
-                            <input 
-                              type="checkbox" 
-                              defaultChecked={goal.checked}
-                              className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded" 
-                            />
-                            <span className="text-sm text-gray-700">{goal.label}</span>
-                          </div>
-                        ))}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Neural Optimization Goals
+                        </label>
+                        <div className="space-y-3">
+                          {[
+                            { id: 'revenue', label: 'Maximizar Revenue (ROAS > 15x)', checked: true },
+                            { id: 'conversion', label: 'Optimizar Conversion Rate (>20%)', checked: true },
+                            { id: 'ltv', label: 'Predecir Customer Lifetime Value', checked: false },
+                            { id: 'whatsapp', label: 'Qualification Score WhatsApp (>8/10)', checked: false }
+                          ].map((goal) => (
+                            <div key={goal.id} className="flex items-center">
+                              <input 
+                                type="checkbox" 
+                                defaultChecked={goal.checked}
+                                className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded" 
+                              />
+                              <span className="text-sm text-gray-700">{goal.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Neural Learning Period
+                        </label>
+                        <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                          <option>Tiempo real (learning continuo)</option>
+                          <option>Últimos 7 días (neural rapid)</option>
+                          <option>Últimos 30 días (neural deep)</option>
+                          <option>Últimos 90 días (neural comprehensive)</option>
+                        </select>
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Neural Learning Period
-                      </label>
-                      <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        <option>Tiempo real (learning continuo)</option>
-                        <option>Últimos 7 días (neural rapid)</option>
-                        <option>Últimos 30 días (neural deep)</option>
-                        <option>Últimos 90 días (neural comprehensive)</option>
-                      </select>
+                    {/* Neural Preview */}
+                    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-100">
+                      <h4 className="text-md font-semibold text-gray-900 mb-4 flex items-center">
+                        <Brain className="w-4 h-4 mr-2 text-purple-600" />
+                        Neural Prediction Preview
+                        <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                          Live Neural Analysis
+                        </span>
+                      </h4>
+                      <div className="space-y-4">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Tamaño neural estimado:</span>
+                          <span className="text-sm font-medium text-gray-900">Esperando datos</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Conversion rate predicho:</span>
+                          <span className="text-sm font-medium text-gray-600">TBD</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Revenue neural forecast:</span>
+                          <span className="text-sm font-medium text-gray-900">$0</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Neural confidence:</span>
+                          <span className="text-sm font-medium text-purple-600">
+                            {masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0}%
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 pt-6 border-t border-purple-200">
+                        <h5 className="text-sm font-medium text-gray-900 mb-3">Neural Insights Preview</h5>
+                        <div className="space-y-2">
+                          {[
+                            'Esperando eventos de tracking',
+                            'Configurar pixel de attribution',
+                            'Conectar Google Analytics',
+                            'Setup WhatsApp Business API'
+                          ].map((insight, index) => (
+                            <div key={index} className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                              {insight}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <button className="w-full mt-6 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all duration-200">
+                        <Brain className="w-4 h-4 mr-2 inline" />
+                        Crear con Neural Engine
+                      </button>
                     </div>
                   </div>
-
-                  {/* Neural Preview */}
-                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-100">
-                    <h4 className="text-md font-semibold text-gray-900 mb-4 flex items-center">
-                      <Brain className="w-4 h-4 mr-2 text-purple-600" />
-                      Neural Prediction Preview
-                      <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
-                        Live Neural Analysis
-                      </span>
-                    </h4>
-                    <div className="space-y-4">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Tamaño neural estimado:</span>
-                        <span className="text-sm font-medium text-gray-900">28,750 usuarios</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Conversion rate predicho:</span>
-                        <span className="text-sm font-medium text-green-600">18.9%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Revenue neural forecast:</span>
-                        <span className="text-sm font-medium text-gray-900">$287,500</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Neural confidence:</span>
-                        <span className="text-sm font-medium text-purple-600">96.7%</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 pt-6 border-t border-purple-200">
-                      <h5 className="text-sm font-medium text-gray-900 mb-3">Neural Insights Preview</h5>
-                      <div className="space-y-2">
-                        {[
-                          'IA detecta patrón: WhatsApp + Email engagement',
-                          'Optimal timing: 14:30-16:45 UTC-5',
-                          'Cross-platform journey: 4.2 touchpoints',
-                          'Predicción LTV: $2,450 por usuario'
-                        ].map((insight, index) => (
-                          <div key={index} className="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded">
-                            {insight}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button className="w-full mt-6 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all duration-200">
-                      <Brain className="w-4 h-4 mr-2 inline" />
-                      Crear con Neural Engine
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           )}
@@ -848,8 +933,8 @@ export default function AudiencesPageReal() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <Target className="w-5 h-5 mr-2 text-purple-600" />
                     Neural Segmentation
-                    <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
-                      IA Optimized
+                    <span className="ml-2 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                      Esperando Datos
                     </span>
                   </h3>
                   <div style={{ height: '250px' }}>
@@ -872,6 +957,9 @@ export default function AudiencesPageReal() {
                       </RechartsPieChart>
                     </ResponsiveContainer>
                   </div>
+                  <div className="mt-4 text-center">
+                    <p className="text-sm text-gray-500">Configurar tracking para ver segmentación neural</p>
+                  </div>
                 </div>
 
                 {/* Real-Time Neural Metrics */}
@@ -882,10 +970,26 @@ export default function AudiencesPageReal() {
                   </h3>
                   <div className="space-y-4">
                     {[
-                      { metric: 'Neural Processing Speed', value: '2.3M eventos/seg', status: 'optimal' },
-                      { metric: 'IA Prediction Accuracy', value: '96.7%', status: 'excellent' },
-                      { metric: 'Real-Time Optimization', value: 'Activo 24/7', status: 'active' },
-                      { metric: 'WhatsApp Qualification', value: '8.9/10 avg score', status: 'high' }
+                      { 
+                        metric: 'Master Orchestrator', 
+                        value: connectionError ? 'Offline' : 'Connected', 
+                        status: connectionError ? 'error' : 'excellent' 
+                      },
+                      { 
+                        metric: 'Quintuple AI Completion', 
+                        value: `${masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0}%`, 
+                        status: (masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0) >= 50 ? 'optimal' : 'pending' 
+                      },
+                      { 
+                        metric: 'Neural Processing Speed', 
+                        value: realAudiences.length > 0 ? '2.3M eventos/seg' : 'Esperando eventos', 
+                        status: realAudiences.length > 0 ? 'optimal' : 'pending' 
+                      },
+                      { 
+                        metric: 'Attribution Events', 
+                        value: '0 eventos', 
+                        status: 'pending' 
+                      }
                     ].map((item, index) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <div className="flex items-center space-x-3">
@@ -897,7 +1001,7 @@ export default function AudiencesPageReal() {
                           <div className={`text-xs ${
                             item.status === 'excellent' ? 'text-green-600' :
                             item.status === 'optimal' ? 'text-blue-600' :
-                            item.status === 'active' ? 'text-purple-600' :
+                            item.status === 'error' ? 'text-red-600' :
                             'text-yellow-600'
                           }`}>
                             {item.status}
@@ -916,9 +1020,11 @@ export default function AudiencesPageReal() {
                     <Globe className="w-5 h-5 mr-2 text-purple-600" />
                     Neural Channel Performance
                   </h3>
-                  <div className="flex items-center text-sm text-purple-600 bg-purple-50 px-3 py-1 rounded-full">
+                  <div className={`flex items-center text-sm px-3 py-1 rounded-full ${
+                    connectionError ? 'text-red-600 bg-red-50' : 'text-purple-600 bg-purple-50'
+                  }`}>
                     <Brain className="w-4 h-4 mr-1" />
-                    IA Optimizando en tiempo real
+                    {connectionError ? 'Master Offline' : 'Esperando eventos'}
                   </div>
                 </div>
                 <div className="overflow-x-auto">
@@ -949,11 +1055,7 @@ export default function AudiencesPageReal() {
                             ${channel.totalSize.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`text-sm font-medium ${
-                              channel.avgCR >= 20 ? 'text-green-600' : 
-                              channel.avgCR >= 15 ? 'text-green-600' : 
-                              channel.avgCR >= 10 ? 'text-yellow-600' : 'text-red-600'
-                            }`}>
+                            <span className="text-sm font-medium text-gray-600">
                               {channel.avgCR}%
                             </span>
                           </td>
@@ -975,7 +1077,9 @@ export default function AudiencesPageReal() {
                   <h3 className="text-lg font-semibold text-gray-900">Neural Templates Exclusivos</h3>
                   <div className="ml-auto flex items-center space-x-2 bg-purple-100 px-3 py-1 rounded-full">
                     <Brain className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm font-medium text-purple-700">Powered by IA</span>
+                    <span className="text-sm font-medium text-purple-700">
+                      {connectionError ? 'Offline' : 'Master Connected'}
+                    </span>
                   </div>
                 </div>
                 
@@ -983,15 +1087,26 @@ export default function AudiencesPageReal() {
                   {neuralTemplates.map((template, index) => {
                     const Icon = template.icon;
                     return (
-                      <div key={index} className="border border-gray-200 rounded-xl p-6 hover:border-purple-500 hover:shadow-lg transition-all duration-200 cursor-pointer group">
+                      <div key={index} className={`border border-gray-200 rounded-xl p-6 transition-all duration-200 ${
+                        template.available ? 'hover:border-purple-500 hover:shadow-lg cursor-pointer group' : 'opacity-50 cursor-not-allowed'
+                      }`}>
                         <div className="flex items-center space-x-4 mb-4">
-                          <div className={`p-3 rounded-xl bg-gradient-to-r ${template.color} group-hover:scale-110 transition-transform duration-200`}>
+                          <div className={`p-3 rounded-xl bg-gradient-to-r ${template.color} ${
+                            template.available ? 'group-hover:scale-110' : ''
+                          } transition-transform duration-200`}>
                             <Icon className="w-6 h-6 text-white" />
                           </div>
                           <div>
-                            <h4 className="text-lg font-semibold text-gray-900 group-hover:text-purple-700 transition-colors flex items-center">
+                            <h4 className={`text-lg font-semibold flex items-center transition-colors ${
+                              template.available ? 'text-gray-900 group-hover:text-purple-700' : 'text-gray-500'
+                            }`}>
                               {template.name}
                               <Brain className="w-4 h-4 ml-2 text-purple-500" />
+                              {!template.available && (
+                                <span className="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                                  Setup Required
+                                </span>
+                              )}
                             </h4>
                             <p className="text-sm text-gray-600">{template.description}</p>
                           </div>
@@ -1004,7 +1119,7 @@ export default function AudiencesPageReal() {
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-600">Conv. rate IA:</span>
-                            <span className="font-medium text-green-600">{template.conversionRate}</span>
+                            <span className="font-medium text-gray-600">{template.conversionRate}</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-600">Neural confidence:</span>
@@ -1012,9 +1127,16 @@ export default function AudiencesPageReal() {
                           </div>
                         </div>
                         
-                        <button className="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover:from-purple-600 group-hover:to-indigo-700">
+                        <button 
+                          className={`w-full px-4 py-2 rounded-lg transition-all duration-200 ${
+                            template.available 
+                              ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:shadow-lg group-hover:from-purple-600 group-hover:to-indigo-700'
+                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          }`}
+                          disabled={!template.available}
+                        >
                           <Brain className="w-4 h-4 mr-2 inline" />
-                          Activar Neural Template
+                          {template.available ? 'Activar Neural Template' : 'Completar Setup Primero'}
                         </button>
                       </div>
                     );
@@ -1023,14 +1145,20 @@ export default function AudiencesPageReal() {
               </div>
 
               {/* Neural Engine Status */}
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200 p-4">
+              <div className={`rounded-xl border p-4 ${
+                connectionError ? 'bg-red-50 border-red-200' : 'bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200'
+              }`}>
                 <div className="flex items-center">
-                  <Brain className="w-5 h-5 text-purple-600 mr-3" />
+                  <Brain className={`w-5 h-5 mr-3 ${connectionError ? 'text-red-600' : 'text-purple-600'}`} />
                   <div>
-                    <h4 className="font-semibold text-purple-900">🧠 Neural Engine Status: OPTIMIZANDO</h4>
-                    <p className="text-sm text-purple-700">
-                      Estos templates utilizan algoritmos de machine learning propietarios para descubrir audiencias 
-                      rentables que la competencia no puede detectar. Confianza promedio: 96.7%
+                    <h4 className={`font-semibold ${connectionError ? 'text-red-900' : 'text-purple-900'}`}>
+                      🧠 Neural Engine Status: {connectionError ? 'OFFLINE' : 'CONECTADO'}
+                    </h4>
+                    <p className={`text-sm ${connectionError ? 'text-red-700' : 'text-purple-700'}`}>
+                      {connectionError 
+                        ? 'Master Orchestrator no disponible. Reconectar para usar templates neurales.'
+                        : `Quintuple AI al ${masterData?.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 0}%. Templates disponibles según nivel de configuración completado.`
+                      }
                     </p>
                   </div>
                 </div>

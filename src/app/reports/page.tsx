@@ -20,16 +20,28 @@ import {
 } from 'recharts';
 
 // Interfaces para datos reales del Master Orchestrator
+interface PlatformData {
+  connected: boolean;
+  account_name?: string;
+  account_id?: string;
+  customer_id?: string;
+  advertiser_count?: number;
+  configured?: boolean;
+}
+
+interface MasterPlatforms {
+  meta_ads?: PlatformData;
+  google_ads?: PlatformData;
+  tiktok_ads?: PlatformData;
+  youtube_ads?: PlatformData;
+  micro_budget?: PlatformData;
+  [key: string]: PlatformData | undefined; // Permitir indexación dinámica
+}
+
 interface MasterDataState {
   user: { name: string; id: string } | null;
   account: { name: string; id: string; currency: string } | null;
-  platforms: {
-    meta_ads?: { connected: boolean; account_name?: string; account_id?: string };
-    google_ads?: { connected: boolean; customer_id?: string };
-    tiktok_ads?: { connected: boolean; advertiser_count?: number };
-    youtube_ads?: { connected: boolean };
-    micro_budget?: { configured: boolean };
-  };
+  platforms: MasterPlatforms;
   summary?: {
     total_connected: number;
     ready_percentage: number;
@@ -96,13 +108,51 @@ export default function ReportsPage() {
         setLoading(true);
         console.log('🚀 REPORTS: Haciendo fetch al Master Orchestrator...');
         
-        // ENDPOINT CORRECTO - Master Orchestrator (OCHETOR)
-        const response = await fetch('http://18.219.188.252/quintuple-ai/status');
-        console.log('📡 REPORTS: Response recibido:', response);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ REPORTS: Master Data recibida:', data);
+        // ENDPOINTS MÚLTIPLES - Primero AWS, luego OCHETOR como backup
+        const endpoints = [
+          'http://3.16.108.83:8000/quintuple-ai/status',           // AWS Principal
+          'http://18.219.188.252/quintuple-ai/status',             // OCHETOR Backup
+          'http://3.16.108.83:8000/api/master',                    // AWS Master Endpoint
+          'http://18.219.188.252/api/master',                      // OCHETOR Master Endpoint
+          'http://3.16.108.83:8000/status',                        // AWS Status
+          'http://18.219.188.252/status'                           // OCHETOR Status
+        ];
+
+        let masterConnected = false;
+        let masterResponse = null;
+
+        // Intentar cada endpoint hasta que uno funcione
+        for (const endpoint of endpoints) {
+          try {
+            console.log(`🔍 REPORTS: Probando endpoint: ${endpoint}`);
+            const response = await fetch(endpoint, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              mode: 'cors'
+            });
+            
+            console.log(`📡 REPORTS: Response de ${endpoint}:`, response.status);
+            
+            if (response.ok) {
+              const data = await response.json();
+              console.log(`✅ REPORTS: Datos recibidos de ${endpoint}:`, data);
+              masterResponse = data;
+              masterConnected = true;
+              break; // Salir del loop si encontramos uno que funciona
+            }
+          } catch (endpointError: unknown) {
+            const errorMessage = endpointError instanceof Error ? endpointError.message : 'Error desconocido';
+            console.log(`❌ REPORTS: Error en ${endpoint}:`, errorMessage);
+            continue; // Continuar con el siguiente endpoint
+          }
+        }
+
+        if (masterConnected && masterResponse) {
+          console.log('🎉 REPORTS: Master Orchestrator conectado exitosamente');
+          const data = masterResponse;
           
           // Extraer información real del Master Orchestrator
           const connectedPlatforms = [];
@@ -110,34 +160,53 @@ export default function ReportsPage() {
           let totalConversions = 0;
           let accountName = 'Attributely Pro Account';
           
-          // Analizar plataformas conectadas
-          if (data.platforms?.meta_ads?.connected) {
+          // Analizar plataformas conectadas con validación robusta
+          if (data.platforms?.meta_ads?.connected === true) {
             connectedPlatforms.push('Meta Ads');
+            accountName = data.platforms.meta_ads.account_name || accountName;
             totalSpend += 0; // Empezamos en 0 como pediste
             totalConversions += 0;
           }
           
-          if (data.platforms?.google_ads?.connected) {
+          if (data.platforms?.google_ads?.connected === true) {
             connectedPlatforms.push('Google Ads');
             totalSpend += 0;
             totalConversions += 0;
           }
           
-          if (data.platforms?.tiktok_ads?.connected) {
+          if (data.platforms?.tiktok_ads?.connected === true) {
             connectedPlatforms.push('TikTok Ads');
             totalSpend += 0;
             totalConversions += 0;
           }
           
-          if (data.platforms?.youtube_ads?.connected) {
+          if (data.platforms?.youtube_ads?.connected === true) {
             connectedPlatforms.push('YouTube Ads');
             totalSpend += 0;
             totalConversions += 0;
           }
 
+          // Validar estructura de platforms antes de usar
+          const safePlatforms: MasterPlatforms = {};
+          if (data.platforms && typeof data.platforms === 'object') {
+            Object.keys(data.platforms).forEach(key => {
+              const platformData = (data.platforms as any)[key];
+              if (platformData && typeof platformData === 'object') {
+                safePlatforms[key] = {
+                  connected: Boolean(platformData.connected || platformData.configured),
+                  account_name: platformData.account_name || null,
+                  account_id: platformData.account_id || null,
+                  customer_id: platformData.customer_id || null,
+                  advertiser_count: platformData.advertiser_count || null,
+                  configured: platformData.configured || null
+                };
+              }
+            });
+          }
+
           setMasterData({
             user: { 
-              name: 'Real User', 
+              name: 'Master User Real', 
               id: 'master_user_real' 
             },
             account: { 
@@ -145,27 +214,36 @@ export default function ReportsPage() {
               id: 'master_account_real', 
               currency: 'USD' 
             },
-            platforms: data.platforms || {},
+            platforms: safePlatforms,
             summary: {
               total_connected: connectedPlatforms.length,
-              ready_percentage: data.overall_completion || 0,
+              ready_percentage: Number(data.overall_completion) || 0,
               overall_status: data.status || 'unknown'
             },
             campaigns: [],
             isConnected: true,
-            connectionStatus: `✅ Conectado: ${connectedPlatforms.length} plataforma(s) - ${(data.overall_completion || 0).toFixed(1)}% completado`
+            connectionStatus: `✅ Conectado al Master: ${connectedPlatforms.length} plataforma(s) - ${Number(data.overall_completion || 0).toFixed(1)}% completado`
           });
           
           console.log('🎉 REPORTS: Master Orchestrator conectado exitosamente');
           console.log('📊 REPORTS: Plataformas conectadas:', connectedPlatforms);
           
         } else {
-          console.log('❌ REPORTS: Response no OK:', response.status);
-          // Fallback a datos mínimos
+          console.log('❌ REPORTS: Ningún endpoint del Master Orchestrator respondió');
           setMasterData({
             user: { name: 'Demo User', id: 'demo' },
             account: { name: 'Demo Account', id: 'demo', currency: 'USD' },
-            platforms: {},
+            platforms: {
+              meta_ads: { connected: false },
+              google_ads: { connected: false },
+              tiktok_ads: { connected: false },
+              youtube_ads: { connected: false }
+            },
+            summary: {
+              total_connected: 0,
+              ready_percentage: 0,
+              overall_status: 'offline'
+            },
             campaigns: [],
             isConnected: false,
             connectionStatus: '❌ Master Orchestrator no disponible - Usando datos demo'
@@ -176,7 +254,17 @@ export default function ReportsPage() {
         setMasterData({
           user: { name: 'Demo User', id: 'demo' },
           account: { name: 'Demo Account', id: 'demo', currency: 'USD' },
-          platforms: {},
+          platforms: {
+            meta_ads: { connected: false },
+            google_ads: { connected: false },
+            tiktok_ads: { connected: false },
+            youtube_ads: { connected: false }
+          },
+          summary: {
+            total_connected: 0,
+            ready_percentage: 0,
+            overall_status: 'error'
+          },
           campaigns: [],
           isConnected: false,
           connectionStatus: '❌ Error de conexión - Usando datos demo'
@@ -198,17 +286,18 @@ export default function ReportsPage() {
       const reports: Report[] = [];
       const connectedPlatforms = [];
       
-      // Detectar plataformas conectadas
-      if (masterData.platforms.meta_ads?.connected) connectedPlatforms.push('Meta Ads');
-      if (masterData.platforms.google_ads?.connected) connectedPlatforms.push('Google Ads');
-      if (masterData.platforms.tiktok_ads?.connected) connectedPlatforms.push('TikTok Ads');
-      if (masterData.platforms.youtube_ads?.connected) connectedPlatforms.push('YouTube Ads');
+      // Detectar plataformas conectadas con validación robusta
+      if (masterData.platforms.meta_ads?.connected === true) connectedPlatforms.push('Meta Ads');
+      if (masterData.platforms.google_ads?.connected === true) connectedPlatforms.push('Google Ads');
+      if (masterData.platforms.tiktok_ads?.connected === true) connectedPlatforms.push('TikTok Ads');
+      if (masterData.platforms.youtube_ads?.connected === true) connectedPlatforms.push('YouTube Ads');
       
       const accountName = masterData.account?.name || 'Real Account';
       const userName = masterData.user?.name || 'Real User';
       
-      // Report 1: Performance Master con datos reales
+      // Solo generar reportes si hay plataformas conectadas
       if (connectedPlatforms.length > 0) {
+        // Report 1: Performance Master con datos reales
         reports.push({
           id: 'master_performance_1',
           name: `Performance Master ${accountName}`,
@@ -225,82 +314,60 @@ export default function ReportsPage() {
           platforms: connectedPlatforms,
           realData: true
         });
-      }
-      
-      // Report 2: Attribution Analysis Real
-      if (connectedPlatforms.length >= 2) {
+        
+        // Report 2: Attribution Analysis Real (solo si hay 2+ plataformas)
+        if (connectedPlatforms.length >= 2) {
+          reports.push({
+            id: 'master_attribution_2',
+            name: `Attribution Analysis Multi-Platform Real`,
+            type: 'attribution',
+            format: 'excel',
+            frequency: 'weekly',
+            status: 'active',
+            lastGenerated: 'Ayer',
+            nextScheduled: 'En 6 días',
+            recipients: ['analytics@company.com'],
+            size: '2.8 MB',
+            downloads: 0,
+            source: 'Cross-Platform Real Data',
+            platforms: connectedPlatforms,
+            realData: true
+          });
+        }
+        
+        // Report 3: Campaign Performance Real-time
         reports.push({
-          id: 'master_attribution_2',
-          name: `Attribution Analysis Multi-Platform Real`,
-          type: 'attribution',
-          format: 'excel',
-          frequency: 'weekly',
+          id: 'master_campaign_3',
+          name: `Campaign Performance Live ${accountName}`,
+          type: 'campaign',
+          format: 'dashboard',
+          frequency: 'daily',
           status: 'active',
-          lastGenerated: 'Ayer',
-          nextScheduled: 'En 6 días',
-          recipients: ['analytics@company.com'],
-          size: '2.8 MB',
+          lastGenerated: 'Hace 1 hora',
+          nextScheduled: 'En 23 horas',
+          recipients: ['team@company.com'],
+          size: 'Live Dashboard',
           downloads: 0,
-          source: 'Cross-Platform Real Data',
+          source: 'Real-time Master API',
           platforms: connectedPlatforms,
           realData: true
         });
-      }
-      
-      // Report 3: Audience Insights Real
-      if (masterData.platforms.meta_ads?.connected || masterData.platforms.google_ads?.connected) {
+      } else {
+        // Si no hay plataformas conectadas, crear un reporte básico
         reports.push({
-          id: 'master_audience_3',
-          name: `Audience Insights ${accountName} Real`,
-          type: 'audience',
-          format: 'pdf',
-          frequency: 'monthly',
-          status: masterData.platforms.meta_ads?.connected ? 'generating' : 'active',
-          lastGenerated: '3 días atrás',
-          nextScheduled: 'En 27 días',
-          recipients: ['growth@company.com'],
-          size: '3.1 MB',
-          downloads: 0,
-          source: 'Real Behavioral Data',
-          platforms: connectedPlatforms.filter(p => p.includes('Meta') || p.includes('Google')),
-          realData: true
-        });
-      }
-      
-      // Report 4: Campaign Performance Real-time
-      reports.push({
-        id: 'master_campaign_4',
-        name: `Campaign Performance Live ${accountName}`,
-        type: 'campaign',
-        format: 'dashboard',
-        frequency: 'daily',
-        status: 'active',
-        lastGenerated: 'Hace 1 hora',
-        nextScheduled: 'En 23 horas',
-        recipients: ['team@company.com'],
-        size: 'Live Dashboard',
-        downloads: 0,
-        source: 'Real-time Master API',
-        platforms: connectedPlatforms,
-        realData: true
-      });
-      
-      // Report 5: Custom Multi-Platform Real
-      if (connectedPlatforms.length >= 3) {
-        reports.push({
-          id: 'master_custom_5',
-          name: `Custom Multi-Platform Journey Real`,
+          id: 'master_setup_1',
+          name: `Setup Master ${accountName} - Sin Plataformas`,
           type: 'custom',
           format: 'pdf',
           frequency: 'custom',
-          status: 'active',
-          lastGenerated: 'Hace 2 días',
-          nextScheduled: 'Manual',
-          recipients: ['consultant@company.com'],
-          size: '5.4 MB',
+          status: 'paused',
+          lastGenerated: 'Nunca',
+          nextScheduled: 'Cuando se conecten plataformas',
+          recipients: ['setup@company.com'],
+          size: '1.0 MB',
           downloads: 0,
-          source: 'Advanced Multi-Platform Tracking',
-          platforms: connectedPlatforms,
+          source: 'Master Orchestrator (Sin plataformas conectadas)',
+          platforms: [],
           realData: true
         });
       }
@@ -365,9 +432,7 @@ export default function ReportsPage() {
       estimatedPages: 12,
       popularity: 98,
       preview: '/api/preview/master-executive',
-      platforms: Object.keys(masterData.platforms).filter(
-        key => (masterData.platforms as Record<string, { connected?: boolean }>)[key]?.connected
-      ),
+      platforms: Object.keys(masterData.platforms).filter(key => masterData.platforms[key]?.connected),
       realDataReady: true
     },
     {
@@ -384,9 +449,7 @@ export default function ReportsPage() {
       estimatedPages: 18,
       popularity: 95,
       preview: '/api/preview/master-attribution',
-      platforms: Object.keys(masterData.platforms).filter(
-        key => (masterData.platforms as Record<string, { connected?: boolean }>)[key]?.connected
-      ),
+      platforms: Object.keys(masterData.platforms).filter(key => masterData.platforms[key]?.connected),
       realDataReady: true
     },
     {
@@ -403,9 +466,7 @@ export default function ReportsPage() {
       estimatedPages: 20,
       popularity: 94,
       preview: '/api/preview/master-performance',
-      platforms: Object.keys(masterData.platforms).filter(
-        key => (masterData.platforms as Record<string, { connected?: boolean }>)[key]?.connected
-      ),
+      platforms: Object.keys(masterData.platforms).filter(key => masterData.platforms[key]?.connected),
       realDataReady: true
     },
     {
@@ -422,9 +483,7 @@ export default function ReportsPage() {
       estimatedPages: 14,
       popularity: 90,
       preview: '/api/preview/master-audience',
-      platforms: Object.keys(masterData.platforms).filter(
-        key => (masterData.platforms as Record<string, { connected?: boolean }>)[key]?.connected
-      ),
+      platforms: Object.keys(masterData.platforms).filter(key => masterData.platforms[key]?.connected),
       realDataReady: true
     },
     {
@@ -441,9 +500,7 @@ export default function ReportsPage() {
       estimatedPages: 10,
       popularity: 87,
       preview: '/api/preview/master-fraud',
-      platforms: Object.keys(masterData.platforms).filter(
-        key => (masterData.platforms as Record<string, { connected?: boolean }>)[key]?.connected
-      ),
+      platforms: Object.keys(masterData.platforms).filter(key => masterData.platforms[key]?.connected),
       realDataReady: true
     },
     {
@@ -460,9 +517,7 @@ export default function ReportsPage() {
       estimatedPages: 16,
       popularity: 92,
       preview: '/api/preview/master-roi',
-      platforms: (Object.keys(masterData.platforms) as (keyof typeof masterData.platforms)[]).filter(
-        key => 'connected' in (masterData.platforms[key] ?? {}) && (masterData.platforms[key] as { connected?: boolean }).connected
-      ),
+      platforms: Object.keys(masterData.platforms).filter(key => masterData.platforms[key]?.connected),
       realDataReady: true
     }
   ] : [
@@ -773,44 +828,55 @@ export default function ReportsPage() {
                     Plataformas Conectadas en Master Orchestrator
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {Object.entries(masterData.platforms).map(([platform, data]) => (
-                      <div key={platform} className={`p-4 rounded-lg border-2 ${
-                        'connected' in (data ?? {}) && (data as { connected?: boolean }).connected
-                          ? 'border-green-200 bg-green-50'
-                          : 'border-gray-200 bg-gray-50'
-                      }`}>
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-3 h-3 rounded-full ${
-                            'connected' in (data ?? {}) && (data as { connected?: boolean }).connected ? 'bg-green-500' : 'bg-gray-400'
-                          }`}></div>
-                          <div>
-                            <div className="font-medium text-gray-900 capitalize">
-                              {platform.replace('_', ' ')}
+                    {masterData.platforms && Object.keys(masterData.platforms).length > 0 ? 
+                      Object.entries(masterData.platforms).map(([platform, data]) => {
+                        // Type guard para asegurar que data existe
+                        const platformData = data as PlatformData;
+                        return (
+                          <div key={platform} className={`p-4 rounded-lg border-2 ${
+                            platformData?.connected === true 
+                              ? 'border-green-200 bg-green-50' 
+                              : 'border-gray-200 bg-gray-50'
+                          }`}>
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-3 h-3 rounded-full ${
+                                platformData?.connected === true ? 'bg-green-500' : 'bg-gray-400'
+                              }`}></div>
+                              <div>
+                                <div className="font-medium text-gray-900 capitalize">
+                                  {platform.replace('_', ' ')}
+                                </div>
+                                <div className={`text-sm ${
+                                  platformData?.connected === true ? 'text-green-600' : 'text-gray-500'
+                                }`}>
+                                  {platformData?.connected === true ? '✅ Conectado' : '❌ Desconectado'}
+                                </div>
+                                {platformData?.account_name && (
+                                  <div className="text-xs text-gray-600 mt-1">
+                                    {platformData.account_name}
+                                  </div>
+                                )}
+                                {platformData?.customer_id && (
+                                  <div className="text-xs text-gray-600 mt-1">
+                                    ID: {platformData.customer_id}
+                                  </div>
+                                )}
+                                {platformData?.advertiser_count && (
+                                  <div className="text-xs text-gray-600 mt-1">
+                                    {platformData.advertiser_count} cuenta(s)
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className={`text-sm ${
-                              'connected' in (data ?? {}) && (data as { connected?: boolean }).connected ? 'text-green-600' : 'text-gray-500'
-                            }`}>
-                              {'connected' in (data ?? {}) && (data as { connected?: boolean }).connected ? '✅ Conectado' : '❌ Desconectado'}
-                            </div>
-                            {('account_name' in (data ?? {})) && (data as { account_name?: string }).account_name && (
-                              <div className="text-xs text-gray-600 mt-1">
-                                {(data as { account_name?: string }).account_name}
-                              </div>
-                            )}
-                            {'customer_id' in (data ?? {}) && (data as { customer_id?: string }).customer_id && (
-                              <div className="text-xs text-gray-600 mt-1">
-                                ID: {(data as { customer_id?: string }).customer_id}
-                              </div>
-                            )}
-                            {'advertiser_count' in (data ?? {}) && typeof (data as { advertiser_count?: number }).advertiser_count === 'number' && (
-                              <div className="text-xs text-gray-600 mt-1">
-                                {(data as { advertiser_count: number }).advertiser_count} cuenta(s)
-                              </div>
-                            )}
                           </div>
+                        );
+                      }) : (
+                        <div className="col-span-4 text-center text-gray-500 py-8">
+                          <Globe className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                          <p>No hay plataformas configuradas en el Master Orchestrator</p>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    }
                   </div>
                 </div>
               )}
@@ -1292,29 +1358,32 @@ export default function ReportsPage() {
                       </label>
                       <div className="space-y-3">
                         {masterData.isConnected && masterData.platforms ? 
-                          Object.entries(masterData.platforms).map(([platform, data]) => (
-                            <div key={platform} className="flex items-center">
-                              <input 
-                                type="checkbox" 
-                                defaultChecked={'connected' in (data ?? {}) && (data as { connected?: boolean }).connected}
-                                disabled={!('connected' in (data ?? {}) && (data as { connected?: boolean }).connected)}
-                                className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded" 
-                              />
-                              <span className={`text-sm ${'connected' in (data ?? {}) && (data as { connected?: boolean }).connected ? 'text-gray-700' : 'text-gray-400'}`}>
-                                {platform.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                              </span>
-                              {'connected' in (data ?? {}) && (data as { connected?: boolean }).connected && (
-                                <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                                  Conectado
+                          Object.entries(masterData.platforms).map(([platform, data]) => {
+                            const platformData = data as PlatformData;
+                            return (
+                              <div key={platform} className="flex items-center">
+                                <input 
+                                  type="checkbox" 
+                                  defaultChecked={platformData?.connected === true}
+                                  disabled={platformData?.connected !== true}
+                                  className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded" 
+                                />
+                                <span className={`text-sm ${platformData?.connected === true ? 'text-gray-700' : 'text-gray-400'}`}>
+                                  {platform.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                 </span>
-                              )}
-                              {'connected' in (data ?? {}) && !(data as { connected?: boolean }).connected && (
-                                <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
-                                  No conectado
-                                </span>
-                              )}
-                            </div>
-                          )) : [
+                                {platformData?.connected === true && (
+                                  <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                    Conectado
+                                  </span>
+                                )}
+                                {platformData?.connected !== true && (
+                                  <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
+                                    No conectado
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          }) : [
                             'Meta Ads Demo',
                             'Google Ads Demo', 
                             'TikTok Ads Demo',
@@ -1437,25 +1506,28 @@ export default function ReportsPage() {
                         </div>
                       </div>
 
-                      {masterData.isConnected && masterData.platforms && (
+                      {masterData.isConnected && masterData.platforms && Object.keys(masterData.platforms).length > 0 && (
                         <div className="bg-white rounded-lg p-4 border border-purple-200">
                           <h5 className="text-sm font-medium text-gray-900 mb-3">Plataformas Master Conectadas:</h5>
                           <div className="space-y-1 text-sm">
-                            {Object.entries(masterData.platforms).map(([platform, data]) => (
-                              <div key={platform} className={`flex items-center ${'connected' in (data ?? {}) && (data as { connected?: boolean }).connected ? 'text-green-600' : 'text-gray-400'}`}>
-                                {'connected' in (data ?? {}) && (data as { connected?: boolean }).connected ? (
-                                  <CheckCircle className="w-4 h-4 mr-2" />
-                                ) : (
-                                  <AlertTriangle className="w-4 h-4 mr-2" />
-                                )}
-                                <span>{platform.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                                {'connected' in (data ?? {}) && (data as { connected?: boolean }).connected && (
-                                  <span className="ml-2 text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded">
-                                    ✓
-                                  </span>
-                                )}
-                              </div>
-                            ))}
+                            {Object.entries(masterData.platforms).map(([platform, data]) => {
+                              const platformData = data as PlatformData;
+                              return (
+                                <div key={platform} className={`flex items-center ${platformData?.connected === true ? 'text-green-600' : 'text-gray-400'}`}>
+                                  {platformData?.connected === true ? (
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                  ) : (
+                                    <AlertTriangle className="w-4 h-4 mr-2" />
+                                  )}
+                                  <span>{platform.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                  {platformData?.connected === true && (
+                                    <span className="ml-2 text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded">
+                                      ✓
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -1527,9 +1599,7 @@ export default function ReportsPage() {
                       size: '4.2 MB', 
                       downloads: 0, 
                       status: 'completado',
-                      platforms: (Object.keys(masterData.platforms) as (keyof typeof masterData.platforms)[]).filter(
-                        key => 'connected' in (masterData.platforms[key] ?? {}) && (masterData.platforms[key] as { connected?: boolean }).connected
-                      )
+                      platforms: Object.keys(masterData.platforms).filter(key => masterData.platforms[key]?.connected)
                     },
                     { 
                       name: `Attribution Analysis Master - Multi-Plataforma Real`, 
@@ -1537,9 +1607,7 @@ export default function ReportsPage() {
                       size: '2.8 MB', 
                       downloads: 0, 
                       status: 'completado',
-                      platforms: (Object.keys(masterData.platforms) as (keyof typeof masterData.platforms)[]).filter(
-                        key => 'connected' in (masterData.platforms[key] ?? {}) && (masterData.platforms[key] as { connected?: boolean }).connected
-                      )
+                      platforms: Object.keys(masterData.platforms).filter(key => masterData.platforms[key]?.connected)
                     },
                     { 
                       name: `Audience Insights Master ${masterData.account?.name} - Live Data`, 
@@ -1555,9 +1623,7 @@ export default function ReportsPage() {
                       size: '1.2 MB', 
                       downloads: 0, 
                       status: 'completado',
-                      platforms: (Object.keys(masterData.platforms) as (keyof typeof masterData.platforms)[]).filter(
-                        key => 'connected' in (masterData.platforms[key] ?? {}) && (masterData.platforms[key] as { connected?: boolean }).connected
-                      )
+                      platforms: Object.keys(masterData.platforms).filter(key => masterData.platforms[key]?.connected)
                     },
                     { 
                       name: `Custom Journey Analysis Master Orchestrator`, 
@@ -1565,9 +1631,7 @@ export default function ReportsPage() {
                       size: '5.1 MB', 
                       downloads: 0, 
                       status: 'completado',
-                      platforms: (Object.keys(masterData.platforms) as (keyof typeof masterData.platforms)[]).filter(
-                        key => 'connected' in (masterData.platforms[key] ?? {}) && (masterData.platforms[key] as { connected?: boolean }).connected
-                      )
+                      platforms: Object.keys(masterData.platforms).filter(key => masterData.platforms[key]?.connected)
                     }
                   ] : [
                     { name: 'Executive Performance - Noviembre 2024', date: '1 Nov 2024', size: '2.4 MB', downloads: 23, status: 'completado' },
@@ -1643,18 +1707,22 @@ export default function ReportsPage() {
       </div>
 
       {/* Debug info temporal - Master Orchestrator Status */}
-      {masterData.isConnected && (
-        <div className="fixed bottom-4 right-4 bg-green-100 border border-green-300 rounded-lg p-3 text-sm max-w-sm">
-          <div className="font-semibold text-green-900 mb-1">🎯 Master Orchestrator Online</div>
-          <div className="text-green-700">
-            <div>Servidor: http://18.219.188.252 (OCHETOR)</div>
-            <div>Cuenta: {masterData.account?.name}</div>
-            <div>Plataformas: {masterData.summary?.total_connected}/5</div>
-            <div>Completado: {masterData.summary?.ready_percentage?.toFixed(1)}%</div>
-            <div>Estado: {masterData.summary?.overall_status}</div>
-          </div>
+      <div className="fixed bottom-4 right-4 bg-white border border-gray-300 rounded-lg p-3 text-sm max-w-sm shadow-lg">
+        <div className={`font-semibold mb-1 ${masterData.isConnected ? 'text-green-900' : 'text-red-900'}`}>
+          {masterData.isConnected ? '🎯 Master Orchestrator Online' : '❌ Master Orchestrator Offline'}
         </div>
-      )}
+        <div className={masterData.isConnected ? 'text-green-700' : 'text-red-700'}>
+          <div>AWS: http://3.16.108.83:8000</div>
+          <div>OCHETOR: http://18.219.188.252</div>
+          <div>Cuenta: {masterData.account?.name || 'N/A'}</div>
+          <div>Plataformas: {masterData.summary?.total_connected || 0}/5</div>
+          <div>Completado: {masterData.summary?.ready_percentage?.toFixed(1) || '0'}%</div>
+          <div>Estado: {masterData.summary?.overall_status || 'unknown'}</div>
+        </div>
+        <div className="mt-2 text-xs text-gray-500">
+          {masterData.connectionStatus}
+        </div>
+      </div>
 
       {/* Styles for animations */}
       <style jsx>{`

@@ -108,14 +108,9 @@ export default function ReportsPage() {
         setLoading(true);
         console.log('🚀 REPORTS: Haciendo fetch al Master Orchestrator...');
         
-        // ENDPOINTS MÚLTIPLES - Primero AWS, luego OCHETOR como backup
+        // ✅ CONECTAR CON MASTER ORCHESTRATOR (mismo endpoint que Audiences)
         const endpoints = [
-          'http://3.16.108.83:8000/quintuple-ai/status',           // AWS Principal
-          'http://18.219.188.252/quintuple-ai/status',             // OCHETOR Backup
-          'http://3.16.108.83:8000/api/master',                    // AWS Master Endpoint
-          'http://18.219.188.252/api/master',                      // OCHETOR Master Endpoint
-          'http://3.16.108.83:8000/status',                        // AWS Status
-          'http://18.219.188.252/status'                           // OCHETOR Status
+          '/api/master'  // Endpoint que funciona en Audiences
         ];
 
         let masterConnected = false;
@@ -125,14 +120,7 @@ export default function ReportsPage() {
         for (const endpoint of endpoints) {
           try {
             console.log(`🔍 REPORTS: Probando endpoint: ${endpoint}`);
-            const response = await fetch(endpoint, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              mode: 'cors'
-            });
+            const response = await fetch(endpoint);
             
             console.log(`📡 REPORTS: Response de ${endpoint}:`, response.status);
             
@@ -160,40 +148,39 @@ export default function ReportsPage() {
           let totalConversions = 0;
           let accountName = 'Attributely Pro Account';
           
-          // Analizar plataformas conectadas con validación robusta
-          if (data.platforms?.meta_ads?.status === "connected") {
+          // Analizar plataformas conectadas - Usar misma estructura que Audiences
+          if (data.platforms_status?.meta?.status === "connected") {
             connectedPlatforms.push('Meta Ads');
-            accountName = data.platforms.meta_ads.account_name || accountName;
             totalSpend += 0; // Empezamos en 0 como pediste
             totalConversions += 0;
           }
           
-          if (data.platforms?.google_ads?.status === "connected") {
+          if (data.platforms_status?.google?.status === "connected" || data.platforms_status?.google?.status === "connected_with_format_issue") {
             connectedPlatforms.push('Google Ads');
             totalSpend += 0;
             totalConversions += 0;
           }
           
-          if (data.platforms?.tiktok_ads?.status === "connected") {
+          if (data.platforms_status?.tiktok?.status === "connected") {
             connectedPlatforms.push('TikTok Ads');
             totalSpend += 0;
             totalConversions += 0;
           }
           
-          if (data.platforms?.youtube_ads?.status === "connected") {
+          if (data.platforms_status?.youtube?.status === "connected") {
             connectedPlatforms.push('YouTube Ads');
             totalSpend += 0;
             totalConversions += 0;
           }
 
-          // Validar estructura de platforms antes de usar
+          // Validar estructura de platforms usando misma estructura que Audiences
           const safePlatforms: MasterPlatforms = {};
-          if (data.platforms && typeof data.platforms === 'object') {
-            Object.keys(data.platforms).forEach(key => {
-              const platformData = (data.platforms as any)[key];
+          if (data.platforms_status && typeof data.platforms_status === 'object') {
+            Object.keys(data.platforms_status).forEach(key => {
+              const platformData = (data.platforms_status as any)[key];
               if (platformData && typeof platformData === 'object') {
                 safePlatforms[key] = {
-                  connected: Boolean(platformData.status === "connected" || platformData.connected),
+                  connected: Boolean(platformData.status === "connected" || platformData.status === "connected_with_format_issue"),
                   account_name: platformData.account_name || null,
                   account_id: platformData.account_id || null,
                   customer_id: platformData.customer_id || null,
@@ -217,7 +204,7 @@ export default function ReportsPage() {
             platforms: safePlatforms,
             summary: {
               total_connected: connectedPlatforms.length,
-              ready_percentage: Number(data.overall_completion) || 0,
+              ready_percentage: Number(data.quintuple_ai?.quintuple_ai_analysis?.overall_completion) || 0,
               overall_status: data.status || 'unknown'
             },
             campaigns: [],
@@ -1712,8 +1699,7 @@ export default function ReportsPage() {
           {masterData.isConnected ? '🎯 Master Orchestrator Online' : '❌ Master Orchestrator Offline'}
         </div>
         <div className={masterData.isConnected ? 'text-green-700' : 'text-red-700'}>
-          <div>AWS: http://3.16.108.83:8000</div>
-          <div>OCHETOR: http://18.219.188.252</div>
+          <div>Endpoint: /api/master (igual que Audiences)</div>
           <div>Cuenta: {masterData.account?.name || 'N/A'}</div>
           <div>Plataformas: {masterData.summary?.total_connected || 0}/5</div>
           <div>Completado: {masterData.summary?.ready_percentage?.toFixed(1) || '0'}%</div>

@@ -161,26 +161,26 @@ export default function ReportsPage() {
           let accountName = 'Attributely Pro Account';
           
           // Analizar plataformas conectadas con validación robusta
-          if (data.platforms?.meta_ads?.connected === true) {
+          if (data.platforms?.meta_ads?.status === "connected") {
             connectedPlatforms.push('Meta Ads');
             accountName = data.platforms.meta_ads.account_name || accountName;
             totalSpend += 0; // Empezamos en 0 como pediste
             totalConversions += 0;
           }
           
-          if (data.platforms?.google_ads?.connected === true) {
+          if (data.platforms?.google_ads?.status === "connected") {
             connectedPlatforms.push('Google Ads');
             totalSpend += 0;
             totalConversions += 0;
           }
           
-          if (data.platforms?.tiktok_ads?.connected === true) {
+          if (data.platforms?.tiktok_ads?.status === "connected") {
             connectedPlatforms.push('TikTok Ads');
             totalSpend += 0;
             totalConversions += 0;
           }
           
-          if (data.platforms?.youtube_ads?.connected === true) {
+          if (data.platforms?.youtube_ads?.status === "connected") {
             connectedPlatforms.push('YouTube Ads');
             totalSpend += 0;
             totalConversions += 0;
@@ -193,7 +193,7 @@ export default function ReportsPage() {
               const platformData = (data.platforms as any)[key];
               if (platformData && typeof platformData === 'object') {
                 safePlatforms[key] = {
-                  connected: Boolean(platformData.connected || platformData.configured),
+                  connected: Boolean(platformData.status === "connected" || platformData.connected),
                   account_name: platformData.account_name || null,
                   account_id: platformData.account_id || null,
                   customer_id: platformData.customer_id || null,

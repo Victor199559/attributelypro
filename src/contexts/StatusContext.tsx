@@ -70,11 +70,13 @@ interface AttributionData {
   events: any[];
 }
 
+// 🔥 SOLO AGREGAR masterData a la interface existente
 interface StatusContextType {
   // Data
   realAccountData: RealAccountData | null;
   quintupleStatus: QuintupleAIStatus | null;
   attributionData: AttributionData | null;
+  masterData: any; // 🚀 AGREGADO: Para las audiencias
   
   // Status
   masterStatus: 'online' | 'offline' | 'loading';
@@ -94,6 +96,7 @@ export function StatusProvider({ children }: { children: ReactNode }) {
   const [realAccountData, setRealAccountData] = useState<RealAccountData | null>(null);
   const [quintupleStatus, setQuintupleStatus] = useState<QuintupleAIStatus | null>(null);
   const [attributionData, setAttributionData] = useState<AttributionData | null>(null);
+  const [masterData, setMasterData] = useState<any>(null); // 🚀 AGREGADO: masterData state
   const [masterStatus, setMasterStatus] = useState<'online' | 'offline' | 'loading'>('loading');
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -117,7 +120,10 @@ export function StatusProvider({ children }: { children: ReactNode }) {
         throw new Error('Master Orchestrator no disponible');
       }
       
-      const masterData = await masterResponse.json();
+      const masterDataResponse = await masterResponse.json(); // 🔥 RENOMBRADO para evitar confusión
+      
+      // 🚀 GUARDAR masterData para las audiencias
+      setMasterData(masterDataResponse);
       
       // Fetch Attribution Events
       const eventsResponse = await fetch(`${AWS_BACKEND_URL}/analytics/events`);
@@ -129,7 +135,7 @@ export function StatusProvider({ children }: { children: ReactNode }) {
       }));
 
       // Process platform data
-      const platformsData = masterData.platforms_status || {};
+      const platformsData = masterDataResponse.platforms_status || {}; // 🔥 USAR masterDataResponse
       
       const processedAccountData: RealAccountData = {
         meta: {
@@ -183,7 +189,7 @@ export function StatusProvider({ children }: { children: ReactNode }) {
       };
 
       // Calculate Quintuple AI status
-      const quintupleCompletion = masterData.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 78;
+      const quintupleCompletion = masterDataResponse.quintuple_ai?.quintuple_ai_analysis?.overall_completion || 78; // 🔥 USAR masterDataResponse
       let activePlatforms = 0;
       
       if (processedAccountData.meta.status === 'connected') activePlatforms++;
@@ -213,6 +219,24 @@ export function StatusProvider({ children }: { children: ReactNode }) {
       setConnectionError(error instanceof Error ? error.message : 'Error de conexión');
       setMasterStatus('offline');
       
+      // 🚀 FALLBACK para masterData también
+      setMasterData({
+        status: 'error',
+        quintuple_ai: {
+          quintuple_ai_analysis: {
+            overall_completion: 0,
+            platform_performance: {}
+          }
+        },
+        platforms_status: {
+          meta: { status: 'disconnected', completion: 0 },
+          google: { status: 'disconnected', completion: 0 },
+          tiktok: { status: 'disconnected', completion: 0 },
+          youtube: { status: 'disconnected', completion: 0 },
+          micro: { status: 'disconnected', completion: 0 }
+        }
+      });
+      
       // Fallback data
       setQuintupleStatus({
         total_platforms: 5,
@@ -238,10 +262,12 @@ export function StatusProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, []);
 
+  // 🚀 AGREGAR masterData al value
   const value: StatusContextType = {
     realAccountData,
     quintupleStatus,
     attributionData,
+    masterData, // 🔥 AGREGADO AQUÍ
     masterStatus,
     connectionError,
     loading,

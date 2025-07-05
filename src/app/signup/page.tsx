@@ -1,56 +1,62 @@
 'use client';
-
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-
-type FormStep = 'form' | 'pin' | 'success';
+import { useRouter } from 'next/navigation';
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export default function CrearCuenta() {
-  const [step, setStep] = useState<FormStep>('form');
+  const router = useRouter();
+  const [step, setStep] = useState(1); // 1: formulario, 2: verificar PIN
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  
   const [formData, setFormData] = useState({
-    nombre: '',
     email: '',
     password: '',
     confirmPassword: '',
-    empresa: '',
-    telefono: ''
+    name: ''
   });
-  const [pin, setPin] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [emailSent, setEmailSent] = useState(false);
+  
+  const [pinData, setPinData] = useState({
+    pin: '',
+    pinSent: false
+  });
 
-  const { loginWithGoogle, loginWithFacebook } = useAuth();
+  const [errors, setErrors] = useState<string[]>([]);
+  const [successMessage, setSuccessMessage] = useState('');
 
+  // Manejar cambios en el formulario
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    setError('');
+    setErrors([]); // Limpiar errores al escribir
   };
 
-  const handleSendPin = async () => {
-    // Validaciones básicas
-    if (!formData.nombre || !formData.email || !formData.password) {
-      setError('Por favor completa todos los campos obligatorios');
-      return;
-    }
+  // Validar formulario
+  const validateForm = () => {
+    const newErrors: string[] = [];
+    
+    if (!formData.email) newErrors.push('Email es requerido');
+    if (!formData.email.includes('@')) newErrors.push('Email inválido');
+    if (!formData.password) newErrors.push('Contraseña es requerida');
+    if (formData.password.length < 6) newErrors.push('Contraseña debe tener al menos 6 caracteres');
+    if (formData.password !== formData.confirmPassword) newErrors.push('Las contraseñas no coinciden');
+    if (!formData.name) newErrors.push('Nombre es requerido');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      return;
-    }
+    setErrors(newErrors);
+    return newErrors.length === 0;
+  };
 
-    if (formData.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
+  // Enviar código PIN
+  const handleSendPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
 
-    setIsLoading(true);
-    setError('');
+    setLoading(true);
+    setErrors([]);
 
     try {
       const response = await fetch('/api/auth/send-pin', {
@@ -63,29 +69,40 @@ export default function CrearCuenta() {
         }),
       });
 
-      const result = await response.json();
+      const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.message || 'Error al enviar código');
+      if (data.success) {
+        setPinData({ ...pinData, pinSent: true });
+        setStep(2);
+        setSuccessMessage('✅ Código enviado a tu email');
+        
+        // Mostrar PIN en desarrollo
+        if (data.pin) {
+          console.log('🔍 PIN de desarrollo:', data.pin);
+          alert(`PIN de desarrollo: ${data.pin}`);
+        }
+      } else {
+        setErrors([data.message || 'Error enviando código']);
       }
-
-      setEmailSent(true);
-      setStep('pin');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al enviar código');
+    } catch (error) {
+      console.error('Error:', error);
+      setErrors(['Error de conexión']);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleVerifyPin = async () => {
-    if (!pin || pin.length !== 6) {
-      setError('Por favor ingresa el código de 6 dígitos');
+  // Verificar PIN y crear cuenta
+  const handleVerifyPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!pinData.pin) {
+      setErrors(['Ingresa el código de verificación']);
       return;
     }
 
-    setIsLoading(true);
-    setError('');
+    setLoading(true);
+    setErrors([]);
 
     try {
       const response = await fetch('/api/auth/verify-pin', {
@@ -95,391 +112,249 @@ export default function CrearCuenta() {
         },
         body: JSON.stringify({
           email: formData.email,
-          pin: pin,
-          name: formData.nombre,
-          password: formData.password
+          pin: pinData.pin,
+          password: formData.password,
+          name: formData.name
         }),
       });
 
-      const result = await response.json();
+      const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.message || 'Error al verificar código');
+      if (data.success) {
+        setSuccessMessage('🎉 ¡Cuenta creada exitosamente!');
+        setTimeout(() => {
+          router.push('/login?message=Cuenta creada. Inicia sesión.');
+        }, 2000);
+      } else {
+        setErrors([data.message || 'Error verificando código']);
       }
-
-      setStep('success');
-      
-      // Redirigir después de 2 segundos
-      setTimeout(() => {
-        window.location.href = '/login?message=account-created';
-      }, 2000);
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al verificar código');
+    } catch (error) {
+      console.error('Error:', error);
+      setErrors(['Error de conexión']);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
-
-  const handleGoogleSignup = async () => {
-    setIsLoading(true);
-    try {
-      await loginWithGoogle();
-    } catch (err) {
-      setError('Error al registrarse con Google');
-      setIsLoading(false);
-    }
-  };
-
-  const handleFacebookSignup = async () => {
-    setIsLoading(true);
-    try {
-      await loginWithFacebook();
-    } catch (err) {
-      setError('Error al registrarse con Facebook');
-      setIsLoading(false);
-    }
-  };
-
-  const renderFormStep = () => (
-    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl">
-      {/* Social Login Buttons */}
-      <div className="space-y-3 mb-6">
-        <button
-          onClick={handleGoogleSignup}
-          disabled={isLoading}
-          className="w-full py-3 bg-white text-gray-900 font-medium rounded-lg hover:bg-gray-100 transition-all duration-300 flex items-center justify-center space-x-3 disabled:opacity-70"
-        >
-          <span className="text-xl">🔍</span>
-          <span>Continuar con Google</span>
-        </button>
-        
-        <button
-          onClick={handleFacebookSignup}
-          disabled={isLoading}
-          className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center justify-center space-x-3 disabled:opacity-70"
-        >
-          <span className="text-xl">📘</span>
-          <span>Continuar con Facebook</span>
-        </button>
-      </div>
-
-      {/* Separador */}
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-white/20"></div>
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-4 bg-slate-900 text-white/60">O con email</span>
-        </div>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
-          {error}
-        </div>
-      )}
-
-      <div className="space-y-6">
-        {/* Nombre Completo */}
-        <div>
-          <label className="block text-white font-medium mb-2 text-sm">
-            Nombre Completo *
-          </label>
-          <input
-            type="text"
-            name="nombre"
-            value={formData.nombre}
-            onChange={handleInputChange}
-            required
-            className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all"
-            placeholder="Tu nombre completo"
-          />
-        </div>
-
-        {/* Email */}
-        <div>
-          <label className="block text-white font-medium mb-2 text-sm">
-            Email *
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            required
-            className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all"
-            placeholder="tu@email.com"
-          />
-        </div>
-
-        {/* Contraseña */}
-        <div>
-          <label className="block text-white font-medium mb-2 text-sm">
-            Contraseña *
-          </label>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              required
-              className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all pr-12"
-              placeholder="Mínimo 6 caracteres"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors"
-            >
-              {showPassword ? '🙈' : '👁️'}
-            </button>
-          </div>
-        </div>
-
-        {/* Confirmar Contraseña */}
-        <div>
-          <label className="block text-white font-medium mb-2 text-sm">
-            Confirmar Contraseña *
-          </label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleInputChange}
-            required
-            className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all"
-            placeholder="Confirma tu contraseña"
-          />
-        </div>
-
-        {/* Términos y Condiciones */}
-        <div className="flex items-start space-x-3">
-          <input
-            type="checkbox"
-            id="terms"
-            required
-            className="mt-1 w-5 h-5 text-amber-400 bg-white/10 border-white/30 rounded focus:ring-amber-400 focus:ring-2"
-          />
-          <label htmlFor="terms" className="text-white/90 text-sm leading-relaxed">
-            Acepto los términos y condiciones y la política de privacidad
-          </label>
-        </div>
-
-        {/* Botón Submit */}
-        <button
-          onClick={handleSendPin}
-          disabled={isLoading}
-          className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg rounded-xl hover:from-amber-400 hover:to-orange-400 transition-all duration-300 shadow-lg hover:shadow-amber-500/50 disabled:opacity-70 disabled:cursor-not-allowed"
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>Enviando código...</span>
-            </div>
-          ) : (
-            '📧 Enviar Código de Verificación'
-          )}
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderPinStep = () => (
-    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl">
-      <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-2xl">📧</span>
-        </div>
-        <h3 className="text-xl font-bold text-white mb-2">
-          ¡Código Enviado!
-        </h3>
-        <p className="text-amber-100 text-sm">
-          Hemos enviado un código de 6 dígitos a<br />
-          <span className="font-semibold">{formData.email}</span>
-        </p>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
-          {error}
-        </div>
-      )}
-
-      {/* PIN Input */}
-      <div className="mb-6">
-        <label className="block text-white font-medium mb-3 text-center">
-          Ingresa el código de verificación
-        </label>
-        <input
-          type="text"
-          value={pin}
-          onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-          placeholder="123456"
-          className="w-full px-4 py-4 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all text-center text-2xl font-mono tracking-widest"
-          maxLength={6}
-        />
-        <p className="text-xs text-amber-200 mt-2 text-center">
-          ⏰ El código expira en 10 minutos
-        </p>
-      </div>
-
-      {/* Botones */}
-      <div className="space-y-3">
-        <button
-          onClick={handleVerifyPin}
-          disabled={isLoading || pin.length !== 6}
-          className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-lg rounded-xl hover:from-emerald-400 hover:to-teal-400 transition-all duration-300 shadow-lg hover:shadow-emerald-500/50 disabled:opacity-70 disabled:cursor-not-allowed"
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>Verificando...</span>
-            </div>
-          ) : (
-            '✅ Verificar y Crear Cuenta'
-          )}
-        </button>
-
-        <button
-          onClick={() => setStep('form')}
-          className="w-full py-3 bg-white/10 border border-white/30 rounded-lg text-white font-medium hover:bg-white/20 transition-all duration-300"
-        >
-          ← Volver al formulario
-        </button>
-      </div>
-
-      {/* Reenviar código */}
-      <div className="mt-6 text-center">
-        <button
-          onClick={handleSendPin}
-          disabled={isLoading}
-          className="text-amber-400 hover:text-amber-300 text-sm font-medium transition-colors"
-        >
-          ¿No recibiste el código? Reenviar
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderSuccessStep = () => (
-    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl">
-      <div className="text-center">
-        <div className="w-20 h-20 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span className="text-3xl">🎉</span>
-        </div>
-        <h3 className="text-2xl font-bold text-white mb-4">
-          ¡Cuenta Creada Exitosamente!
-        </h3>
-        <p className="text-amber-100 mb-6">
-          Tu cuenta ha sido verificada y creada correctamente.<br />
-          Ahora puedes iniciar sesión.
-        </p>
-        <div className="w-full bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-lg p-4 border border-emerald-500/30">
-          <p className="text-emerald-300 text-sm">
-            🔄 Redirigiendo al login en unos segundos...
-          </p>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 relative overflow-hidden">
-      {/* Background elements - same as original */}
-      <div className="fixed inset-0 bg-gradient-to-br from-emerald-900/20 via-transparent to-violet-900/20"></div>
-      <div className="fixed inset-0 bg-gradient-to-tr from-amber-900/10 via-transparent to-rose-900/10"></div>
-      
-      {/* Dynamic Money Pattern */}
-      <div className="fixed inset-0 opacity-5">
-        <div className="absolute top-20 left-10 text-4xl text-emerald-400 animate-pulse">💰</div>
-        <div className="absolute top-40 right-20 text-3xl text-amber-400 animate-bounce" style={{animationDelay: '1s'}}>📈</div>
-        <div className="absolute bottom-40 left-20 text-3xl text-violet-400 animate-pulse" style={{animationDelay: '2s'}}>💎</div>
-        <div className="absolute bottom-20 right-10 text-4xl text-emerald-400 animate-bounce" style={{animationDelay: '0.5s'}}>🚀</div>
-        <div className="absolute top-1/2 left-1/4 text-2xl text-amber-400 animate-pulse" style={{animationDelay: '1.5s'}}>⭐</div>
-        <div className="absolute top-1/3 right-1/3 text-2xl text-violet-400 animate-bounce" style={{animationDelay: '2.5s'}}>💸</div>
-      </div>
-      
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-      `}</style>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Crear Cuenta
+          </h1>
+          <p className="text-gray-600">
+            {step === 1 ? 'Completa tus datos para empezar' : 'Verifica tu email para continuar'}
+          </p>
+        </div>
 
-      {/* Navigation Bar */}
-      <nav className="relative z-50 bg-white/5 backdrop-blur-xl border-b border-white/10">
-        <div className="w-full px-6 py-3">
-          <div className="flex justify-between items-center">
-            <div onClick={() => window.location.href = '/'} className="flex items-center space-x-3 cursor-pointer">
-              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-violet-500 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-lg">A</span>
-              </div>
-              <span className="text-2xl font-black text-white drop-shadow-lg">AttributelyPro</span>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <span className="text-white/70 text-sm">¿Ya tienes cuenta?</span>
-              <button 
-                onClick={() => window.location.href = '/login'}
-                className="text-amber-400 hover:text-amber-300 font-medium transition-colors px-4 py-2 rounded-lg hover:bg-white/10"
-              >
-                Iniciar Sesión
-              </button>
-            </div>
+        {/* Paso indicador */}
+        <div className="flex items-center justify-center mb-8">
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+            step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+          }`}>
+            1
+          </div>
+          <div className={`w-12 h-1 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+            step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+          }`}>
+            2
           </div>
         </div>
-      </nav>
 
-      {/* Contenido Principal */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-6 py-8">
-        <div className="max-w-md w-full">
-          
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-0.5 bg-gradient-to-r from-amber-400 to-rose-400 mx-auto mb-4 rounded-full shadow-lg shadow-amber-500/30"></div>
-            <h1 className="text-3xl md:text-4xl font-black text-white mb-3 drop-shadow-2xl">
-              {step === 'form' && '🚀 Crear Cuenta'}
-              {step === 'pin' && '📧 Verificar Email'}
-              {step === 'success' && '🎉 ¡Listo!'}
-            </h1>
-            <p className="text-base text-amber-100 drop-shadow-lg">
-              {step === 'form' && 'Únete a la revolución del marketing attribution'}
-              {step === 'pin' && 'Verifica tu email con el código que te enviamos'}
-              {step === 'success' && 'Tu cuenta está lista para usar'}
-            </p>
-          </div>
-
-          {/* Render current step */}
-          {step === 'form' && renderFormStep()}
-          {step === 'pin' && renderPinStep()}
-          {step === 'success' && renderSuccessStep()}
-
-          {/* Trust Indicators - only show on form step */}
-          {step === 'form' && (
-            <div className="mt-8 text-center">
-              <div className="flex justify-center items-center space-x-6 text-amber-200">
-                <div className="flex items-center space-x-2">
-                  <span className="text-green-400">🔒</span>
-                  <span className="text-sm">100% Seguro</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-blue-400">⚡</span>
-                  <span className="text-sm">Setup Instantáneo</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-purple-400">💎</span>
-                  <span className="text-sm">Gratis Siempre</span>
-                </div>
-              </div>
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          {/* Errores */}
+          {errors.length > 0 && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              {errors.map((error, index) => (
+                <p key={index} className="text-red-600 text-sm">{error}</p>
+              ))}
             </div>
           )}
+
+          {/* Mensaje de éxito */}
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-green-600 text-sm">{successMessage}</p>
+            </div>
+          )}
+
+          {/* PASO 1: Formulario de registro */}
+          {step === 1 && (
+            <form onSubmit={handleSendPin} className="space-y-4">
+              {/* Nombre */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre Completo
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Tu nombre completo"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="tu@email.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Contraseña */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Contraseña
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Mínimo 6 caracteres"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirmar contraseña */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirmar Contraseña
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Confirma tu contraseña"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Enviando código...
+                  </>
+                ) : (
+                  <>
+                    📧 Enviar Código de Verificación
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* PASO 2: Verificar PIN */}
+          {step === 2 && (
+            <div>
+              <div className="text-center mb-6">
+                <div className="text-4xl mb-2">📧</div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Código enviado
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Hemos enviado un código de 6 dígitos a<br />
+                  <span className="font-medium">{formData.email}</span>
+                </p>
+              </div>
+
+              <form onSubmit={handleVerifyPin} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Código de Verificación
+                  </label>
+                  <input
+                    type="text"
+                    value={pinData.pin}
+                    onChange={(e) => setPinData({ ...pinData, pin: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg tracking-widest"
+                    placeholder="000000"
+                    maxLength={6}
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || pinData.pin.length !== 6}
+                  className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Verificando...
+                    </>
+                  ) : (
+                    <>
+                      ✅ Verificar y Crear Cuenta
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="w-full text-gray-600 py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  ← Volver al formulario
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="mt-6 text-center text-sm text-gray-600">
+            ¿Ya tienes cuenta?{' '}
+            <button
+              onClick={() => router.push('/login')}
+              className="text-blue-600 hover:text-blue-500 font-medium"
+            >
+              Inicia Sesión
+            </button>
+          </div>
         </div>
       </div>
     </div>

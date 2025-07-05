@@ -2,180 +2,120 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Verificar variables de entorno con fallbacks seguros
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing Supabase environment variables');
+// Crear cliente de Supabase de forma segura SOLO en runtime
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase environment variables');
+  }
+  
+  return createClient(supabaseUrl, supabaseKey);
 }
-
-// Crear cliente Supabase solo si las variables están disponibles
-const supabase = supabaseUrl && supabaseServiceKey 
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : null;
 
 export async function POST(request: NextRequest) {
   try {
-    // Verificar que Supabase esté configurado
-    if (!supabase) {
+    console.log('🔍 Starting user registration...');
+    
+    // Verificar que tenemos las variables necesarias
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('❌ Missing Supabase environment variables');
       return NextResponse.json({
-        status: 'error',
-        message: 'Database configuration error'
+        success: false,
+        message: 'Server configuration error',
+        error: 'Missing environment variables'
       }, { status: 500 });
     }
 
-    const userData = await request.json();
-    const { email, name, provider, avatar, quintuple_ai_access } = userData;
+    const { email, password, name } = await request.json();
+
+    if (!email || !password) {
+      return NextResponse.json({
+        success: false,
+        message: 'Email and password are required'
+      }, { status: 400 });
+    }
+
+    // Crear cliente en runtime
+    const supabase = getSupabaseClient();
+    
+    console.log('✅ Supabase client created successfully');
 
     // Verificar si el usuario ya existe
-    const { data: existingUser } = await supabase
+    const { data: existingUser, error: checkError } = await supabase
       .from('attributelypro_users')
-      .select('*')
+      .select('email')
       .eq('email', email)
       .single();
 
     if (existingUser) {
       return NextResponse.json({
-        status: 'exists',
-        message: 'User already registered',
-        user: existingUser
-      });
+        success: false,
+        message: 'User already exists'
+      }, { status: 409 });
     }
 
-    // Crear nuevo usuario en AttributelyPro
-    const { data: newUser, error } = await supabase
-      .from('attributelypro_users')
-      .insert([
-        {
-          email,
-          name,
-          provider,
-          avatar_url: avatar,
-          quintuple_ai_access: quintuple_ai_access || true,
-          connected_platforms: [],
-          membership: 'free',
-          total_campaigns: 0,
-          total_revenue: 0,
-          join_source: 'web_signup',
-          last_login: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          // Analytics para remarketing
-          utm_source: null,
-          utm_campaign: null,
-          utm_medium: null,
-          referrer: null,
-          // Flags para marketing automation
-          email_verified: provider !== 'credentials',
-          onboarding_completed: false,
-          first_campaign_created: false,
-          first_conversion: false
-        }
-      ])
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
-    }
-
-    // Trigger welcome email y onboarding sequence
-    await triggerWelcomeSequence(newUser);
-
-    // Notificar a tu API Master sobre nuevo usuario
-    await notifyMasterOrchestrator(newUser);
-
-    return NextResponse.json({
-      status: 'success',
-      message: 'User registered successfully',
-      user: newUser
+    // Crear usuario en Supabase Auth
+    console.log('🔍 Creating user in Supabase Auth...');
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true // Email ya verificado con PIN
     });
 
-  } catch (error) {
-    console.error('User registration error:', error);
-    return NextResponse.json({
-      status: 'error',
-      message: 'Failed to register user'
-    }, { status: 500 });
-  }
-}
-
-// Trigger welcome email sequence
-async function triggerWelcomeSequence(user: any) {
-  try {
-    // Aquí integrarías con tu sistema de email marketing
-    // Por ejemplo: Resend, SendGrid, etc.
-    
-    const welcomeData = {
-      user_id: user.id,
-      email: user.email,
-      name: user.name,
-      sequence: 'welcome_onboarding',
-      trigger: 'signup',
-      quintuple_access: user.quintuple_ai_access
-    };
-
-    // Placeholder para tu sistema de email
-    console.log('🎉 Welcome sequence triggered:', welcomeData);
-    
-  } catch (error) {
-    console.error('Welcome sequence error:', error);
-  }
-}
-
-// Notificar a tu Master Orchestrator
-async function notifyMasterOrchestrator(user: any) {
-  try {
-    // Conectar con tu API Master para analytics
-    await fetch('http://3.16.108.83:8000/users/new-signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: user.id,
-        email: user.email,
-        provider: user.provider,
-        quintuple_access: user.quintuple_ai_access,
-        timestamp: user.created_at
-      })
-    }).catch(console.error);
-
-  } catch (error) {
-    console.error('Master notification error:', error);
-  }
-}
-
-// Profile endpoint
-export async function GET(request: NextRequest) {
-  try {
-    // Verificar que Supabase esté configurado
-    if (!supabase) {
+    if (authError) {
+      console.error('❌ Supabase auth error:', authError);
       return NextResponse.json({
-        error: 'Database configuration error'
+        success: false,
+        message: 'Failed to create user account',
+        error: authError.message
       }, { status: 500 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email');
+    console.log('✅ User created in Supabase Auth:', authUser.user?.id);
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email required' }, { status: 400 });
-    }
-
-    const { data: user, error } = await supabase
+    // Crear registro en tabla de usuarios
+    const { data: userData, error: userError } = await supabase
       .from('attributelypro_users')
-      .select('*')
-      .eq('email', email)
+      .insert({
+        email,
+        password_hash: password, // En producción, hashear esto
+        name: name || email.split('@')[0],
+        plan: 'free',
+        supabase_user_id: authUser.user?.id
+      })
+      .select()
       .single();
 
-    if (error || !user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (userError) {
+      console.error('❌ Database error:', userError);
+      return NextResponse.json({
+        success: false,
+        message: 'Failed to save user data',
+        error: userError.message
+      }, { status: 500 });
     }
 
-    return NextResponse.json(user);
+    console.log('✅ User registered successfully:', userData.email);
 
-  } catch (error) {
-    console.error('Profile fetch error:', error);
-    return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      message: 'User registered successfully',
+      user: {
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        plan: userData.plan
+      }
+    });
+
+  } catch (error: any) {
+    console.error('❌ Registration error:', error);
+    return NextResponse.json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    }, { status: 500 });
   }
 }

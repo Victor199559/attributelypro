@@ -2,13 +2,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Verificar variables de entorno con fallbacks seguros
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Missing Supabase environment variables');
+}
+
+// Crear cliente Supabase solo si las variables están disponibles
+const supabase = supabaseUrl && supabaseServiceKey 
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : null;
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar que Supabase esté configurado
+    if (!supabase) {
+      return NextResponse.json({
+        status: 'error',
+        message: 'Database configuration error'
+      }, { status: 500 });
+    }
+
     const userData = await request.json();
     const { email, name, provider, avatar, quintuple_ai_access } = userData;
 
@@ -132,6 +148,13 @@ async function notifyMasterOrchestrator(user: any) {
 // Profile endpoint
 export async function GET(request: NextRequest) {
   try {
+    // Verificar que Supabase esté configurado
+    if (!supabase) {
+      return NextResponse.json({
+        error: 'Database configuration error'
+      }, { status: 500 });
+    }
+
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
 

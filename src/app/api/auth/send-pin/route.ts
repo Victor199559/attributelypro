@@ -2,13 +2,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// 🔧 FIX: Inicializar Resend solo cuando se use, no en module level
+let resendClient: Resend | null = null;
+
+// Función para obtener el client de Resend
+function getResendClient() {
+  if (!resendClient) {
+    const apiKey = process.env.RESEND_API_KEY;
+    
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY no está configurada en variables de entorno');
+    }
+    
+    resendClient = new Resend(apiKey);
+  }
+  
+  return resendClient;
+}
 
 // Store temporal para PINs (en producción usarías Redis o base de datos)
 const pinStore = new Map<string, { pin: string; expires: number; attempts: number }>();
 
 export async function POST(request: NextRequest) {
   try {
+    // 🔍 DEBUG: Verificar variables de entorno
+    console.log('=== DEBUG RESEND API KEY ===');
+    console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+    console.log('RESEND_API_KEY length:', process.env.RESEND_API_KEY?.length || 0);
+    console.log('RESEND_API_KEY starts with:', process.env.RESEND_API_KEY?.substring(0, 10) || 'UNDEFINED');
+    console.log('============================');
+
     const { email } = await request.json();
 
     if (!email) {
@@ -41,6 +64,9 @@ export async function POST(request: NextRequest) {
     console.log('📧 PIN generado para', email, ':', pin); // Para debug
 
     try {
+      // 🔧 FIX: Obtener resend client de forma segura
+      const resend = getResendClient();
+      
       // Enviar email
       const { data, error } = await resend.emails.send({
         from: 'AttributelyPro <noreply@resend.dev>', // En producción usa tu dominio
@@ -78,8 +104,21 @@ export async function POST(request: NextRequest) {
         ...(process.env.NODE_ENV === 'development' && { pin })
       });
 
-    } catch (emailError) {
+    } catch (emailError: any) {
       console.error('❌ Error de Resend:', emailError);
+      
+      // Si es problema de API key, dar más información
+      if (emailError.message?.includes('API key')) {
+        return NextResponse.json({
+          success: false,
+          message: 'Error de configuración del servicio de email',
+          debug: {
+            hasApiKey: !!process.env.RESEND_API_KEY,
+            error: emailError.message
+          }
+        }, { status: 500 });
+      }
+      
       return NextResponse.json({
         success: false,
         message: 'Error del servicio de email'
@@ -90,7 +129,8 @@ export async function POST(request: NextRequest) {
     console.error('❌ Error en send-pin:', error);
     return NextResponse.json({
       success: false,
-      message: 'Error interno del servidor'
+      message: 'Error interno del servidor',
+      debug: error.message
     }, { status: 500 });
   }
 }

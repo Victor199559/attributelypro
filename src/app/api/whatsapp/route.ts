@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // WhatsApp IA Qualification Engine
 class WhatsAppQualificationIA {
-  private fastapi_url = 'https://api.attributelypro.com';
+  private fastapi_url = 'http://3.16.108.83:8000';
   private whatsapp_api_token = process.env.WHATSAPP_API_TOKEN || 'demo_token';
 
   // IA Lead Scoring Algorithm

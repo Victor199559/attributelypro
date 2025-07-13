@@ -59,7 +59,7 @@ export default function CrearCuenta() {
     setErrors([]);
 
     try {
-      const response = await fetch('/api/auth/send-pin', {
+      const response = await fetch('http://3.16.108.83/auth/send-pin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +105,7 @@ export default function CrearCuenta() {
     setErrors([]);
 
     try {
-      const response = await fetch('/api/auth/verify-pin', {
+      const response = await fetch('http://3.16.108.83/auth/verify-pin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
